@@ -34,7 +34,7 @@ export const useFocusMode = () => {
 };
 
 // Constants for improved notification management
-const NOTIFICATION_COOLDOWN = 1500; // 1.5 seconds cooldown between notifications
+const NOTIFICATION_COOLDOWN = 3000; // Increased to 3 seconds to prevent spam
 const DEFAULT_WHITELIST_APPS = ['Mindful Desktop Companion', 'Electron', 'electron', 'chrome-devtools']; 
 // Idle timeout - trigger notification after this amount of time in a different app
 const IDLE_RESET_TIMEOUT = 30000; // 30 seconds
@@ -89,6 +89,10 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Debounce for handling non-whitelisted app notifications
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isHandlingNotificationRef = useRef<boolean>(false);
+
+  // Add throttling for toast notifications to prevent spam
+  const lastToastTime = useRef<number>(0);
+  const TOAST_THROTTLE_DELAY = 2000; // 2 seconds between toasts
 
   // Load custom text and image on initial mount
   useEffect(() => {
@@ -239,7 +243,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [lastActiveWindow, currentAlertApp, checkInterval, userId]);
   
-  // Save whitelist whenever it changes
+  // Save whitelist whenever it changes (throttled to prevent excessive toasts)
   useEffect(() => {
     try {
       // Always ensure the Electron app is whitelisted
@@ -616,6 +620,21 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
   
+  // Throttled toast function to prevent spam
+  const showThrottledToast = useCallback((message: string, type: 'success' | 'info' | 'error' = 'info') => {
+    const now = Date.now();
+    if (now - lastToastTime.current >= TOAST_THROTTLE_DELAY) {
+      lastToastTime.current = now;
+      if (type === 'success') {
+        toast.success(message);
+      } else if (type === 'error') {
+        toast.error(message);
+      } else {
+        toast.info(message);
+      }
+    }
+  }, []);
+  
   const toggleFocusMode = useCallback(() => {
     const newState = !isFocusMode;
     
@@ -647,7 +666,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         debounceTimerRef.current = null;
       }
       
-      // Notify user of mode change
+      // Notify user of mode change with throttled toast
       if (newState) {
         // Send to electron main process to update tray icon
         if (window.electron) {
@@ -660,9 +679,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           });
         }
         
-        toast.success("Focus Mode activated", {
-          description: "You'll be notified when using non-whitelisted apps",
-        });
+        showThrottledToast("Focus Mode activated - You'll be notified when using non-whitelisted apps", 'success');
         
         // Immediately check current window against whitelist
         if (lastActiveWindow) {
@@ -696,11 +713,11 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setShowingAlert(false);
         setCurrentAlertApp(null);
         
-        toast.info("Focus Mode deactivated");
+        showThrottledToast("Focus Mode deactivated", 'info');
       }
     }, 50);
     
-  }, [isFocusMode, lastActiveWindow, whitelist]);
+  }, [isFocusMode, lastActiveWindow, whitelist, showThrottledToast]);
   
   const addToWhitelist = useCallback((app: string) => {
     if (!whitelist.includes(app) && app.trim() !== '') {
@@ -716,7 +733,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setTimeout(() => {
         setWhitelist(prev => [...prev, app]);
         
-        toast.success(`Added ${app} to whitelist`);
+        showThrottledToast(`Added ${app} to whitelist`, 'success');
         
         // If we're adding the current app to whitelist, clear any alert
         if (currentAlertApp === app) {
@@ -749,7 +766,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       }, 50);
     }
-  }, [whitelist, currentAlertApp, lastActiveWindow, currentActiveApp]);
+  }, [whitelist, currentAlertApp, lastActiveWindow, currentActiveApp, showThrottledToast]);
   
   const removeFromWhitelist = useCallback((app: string) => {
     // Don't allow removing default whitelisted apps
@@ -758,7 +775,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         app.toLowerCase().includes(defaultApp.toLowerCase()) ||
         defaultApp.toLowerCase().includes(app.toLowerCase()))) {
       
-      toast.error("Cannot remove essential system app from whitelist");
+      showThrottledToast("Cannot remove essential system app from whitelist", 'error');
       return;
     }
     
@@ -774,7 +791,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setTimeout(() => {
       setWhitelist(prev => prev.filter(item => item !== app));
       
-      toast.info(`Removed ${app} from whitelist`);
+      showThrottledToast(`Removed ${app} from whitelist`, 'info');
       
       // If we're removing the current app from whitelist and in focus mode,
       // check if we need to show an alert
@@ -803,7 +820,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
       }
     }, 50);
-  }, [isFocusMode, lastActiveWindow]);
+  }, [isFocusMode, lastActiveWindow, showThrottledToast]);
   
   const toggleDimOption = useCallback(() => {
     setDimInsteadOfBlock(prev => !prev);
@@ -852,7 +869,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setLastNotifiedApp(appName);
     
     // Get the custom image and text from state
-    const imageUrl = customImage; // Don't use a default image
+    const imageUrl = customImage;
     const alertText = customText || `You're outside your focus zone. ${appName} is not in your whitelist.`;
     
     // Set current alert app name and show the alert

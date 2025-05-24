@@ -49,7 +49,7 @@ export function RichMediaPopup() {
         setLastShownAppId(currentAppId);
       }
       
-      // Prioritize the custom image from context over the event mediaContent
+      // Always prioritize the custom image from context over the event mediaContent
       const finalMediaContent = customImage || event.detail.mediaContent;
       
       console.log("Final media content to display:", finalMediaContent);
@@ -137,10 +137,18 @@ export function RichMediaPopup() {
   
   if (!notificationData) return null;
   
-  // Use the custom image from context as priority, fallback to mediaContent from event
-  const displayImage = notificationData.mediaContent;
+  // Always use the custom image from context as priority
+  const displayImage = customImage || notificationData.mediaContent;
   
   console.log("Rendering popup with image:", displayImage);
+  
+  // Extract the system message and motivational text
+  const systemMessage = "You're outside your focus zone. {app} is not in your whitelist.";
+  const bodyText = notificationData.body.replace('{app}', notificationData.appName || 'This app');
+  
+  // Check if there's additional motivational text beyond the system message
+  const motivationalText = customText && customText !== systemMessage ? 
+    customText.replace(systemMessage, '').trim() : '';
   
   return (
     <AnimatePresence>
@@ -150,7 +158,7 @@ export function RichMediaPopup() {
             className="p-0 overflow-hidden bg-background rounded-lg border shadow-lg max-w-md w-full"
             style={{ borderRadius: '12px' }}
           >
-            {/* Image Display - Use the custom image from context as priority */}
+            {/* Image Display - Always prioritize custom image from context */}
             {displayImage && (
               <div className="overflow-hidden flex justify-center w-full">
                 <img
@@ -183,14 +191,14 @@ export function RichMediaPopup() {
                 
                 {/* System message about whitelist */}
                 <p className="text-muted-foreground">
-                  {notificationData.body}
+                  {bodyText}
                 </p>
                 
-                {/* Motivational message if present in context */}
-                {customText && customText.trim() && (
+                {/* Motivational message if present and different from system message */}
+                {motivationalText && (
                   <div className="pt-2 border-t border-border/50">
                     <p className="text-sm font-medium italic text-primary">
-                      "{customText.replace("You're outside your focus zone. {app} is not in your whitelist.", "").trim()}"
+                      "{motivationalText}"
                     </p>
                   </div>
                 )}
