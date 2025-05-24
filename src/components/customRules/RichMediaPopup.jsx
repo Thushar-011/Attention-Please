@@ -191,7 +191,7 @@ export function RichMediaPopup() {
               </div>
             </div>
           </AlertDialogContent>
-        </Alert Dialog>
+        </AlertDialog>
       )}
     </AnimatePresence>
   );

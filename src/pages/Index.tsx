@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { TopNav } from "@/components/layout/TopNav";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PomodoroTimer } from "@/components/timers/PomodoroTimer";
-import { EyeCareReminder } from "@/components/eyecare/EyeCareReminder";
+import { EyeCareReminder } from "@/components/eyecare/EyeCareReminder.jsx";
 import { AppUsageList } from "@/components/dashboard/AppUsageList";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { Clock, Zap, Settings, BarChart3 } from "lucide-react";
