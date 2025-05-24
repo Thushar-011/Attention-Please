@@ -23,9 +23,10 @@ export function FocusModeAlert({
     // Use the custom text from focus mode settings or a default
     const alertText = customText || `You're outside your focus zone. ${appName} is not in your whitelist.`;
     
-    console.log("FocusModeAlert - Dispatching with custom image:", customImage);
+    console.log("FocusModeAlert - Using custom image from context:", customImage);
+    console.log("FocusModeAlert - Using custom text:", customText);
     
-    // Create and dispatch the focus popup event
+    // Create and dispatch the focus popup event with custom image from context
     const focusPopupEvent = new CustomEvent('show-focus-popup', { 
       detail: {
         title: "Focus Mode Alert",
@@ -33,12 +34,13 @@ export function FocusModeAlert({
         notificationId: notificationId,
         appName: appName,
         mediaType: customImage ? 'image' : undefined,
-        mediaContent: customImage
+        mediaContent: customImage  // Send the custom image from context
       }
     });
     
     // Dispatch the event to trigger the RichMediaPopup
     console.log(`Dispatching focus popup event for app: ${appName}`);
+    console.log("With custom image:", customImage);
     window.dispatchEvent(focusPopupEvent);
     
     // Also notify electron process about the focus popup
@@ -48,7 +50,7 @@ export function FocusModeAlert({
         body: alertText.replace('{app}', appName),
         notificationId: notificationId,
         mediaType: 'image',
-        mediaContent: customImage,
+        mediaContent: customImage,  // Send the custom image from context
         appName: appName
       });
     }

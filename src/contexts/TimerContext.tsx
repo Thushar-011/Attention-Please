@@ -47,6 +47,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   
   // Track if this is the initial load to prevent showing success toast
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isUserTriggeredUpdate, setIsUserTriggeredUpdate] = useState(false);
   
   // Pomodoro Timer state
   const [pomodoroMinutes, setPomodoroMinutes] = useState(() => {
@@ -142,6 +143,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   // Function to update timer settings - only show toast when explicitly called by user
   const updateTimerSettings = (settings: TimerSettings) => {
+    // Mark this as a user-triggered update
+    setIsUserTriggeredUpdate(true);
+    
     // Update Pomodoro settings
     setPomodoroDuration(settings.pomodoroDuration);
     setPomodoroBreakDuration(settings.pomodoroBreakDuration);
@@ -165,9 +169,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       resetEyeCareTimer();
     }
 
-    // Only show success toast if this is a user-initiated update (not during initialization)
-    if (isInitialized) {
+    // Only show success toast if this is a user-initiated update AND the component is initialized
+    if (isInitialized && isUserTriggeredUpdate) {
       sonnerToast.success("Timer settings updated successfully!");
+      setIsUserTriggeredUpdate(false); // Reset the flag
     }
   };
 

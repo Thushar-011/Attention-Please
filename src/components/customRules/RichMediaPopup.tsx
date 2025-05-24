@@ -31,6 +31,8 @@ export function RichMediaPopup() {
       mediaContent?: string;
     }>) => {
       console.log("Received show-focus-popup event", event.detail);
+      console.log("Custom image from context:", customImage);
+      console.log("Media content from event:", event.detail.mediaContent);
       
       // Extract app ID to prevent duplicate popups
       const appIdMatch = event.detail.notificationId.match(/focus-mode-(.*?)-\d+/);
@@ -47,20 +49,25 @@ export function RichMediaPopup() {
         setLastShownAppId(currentAppId);
       }
       
-      // Set notification data - Use the mediaContent from the event if provided
+      // Prioritize the custom image from context over the event mediaContent
+      const finalMediaContent = customImage || event.detail.mediaContent;
+      
+      console.log("Final media content to display:", finalMediaContent);
+      
+      // Set notification data - Use custom image from context as priority
       setNotificationData({
         title: event.detail.title,
         body: event.detail.body,
         notificationId: event.detail.notificationId,
         appName: event.detail.appName,
-        mediaContent: event.detail.mediaContent
+        mediaContent: finalMediaContent
       });
       
       setIsOpen(true);
       setIsImageLoaded(false);
       
       console.log("Opening focus popup for app:", event.detail.appName);
-      console.log("With custom media:", event.detail.mediaContent || "None provided");
+      console.log("With final custom media:", finalMediaContent || "None provided");
       
       // Auto-dismiss after 8 seconds
       setTimeout(() => {
@@ -102,7 +109,7 @@ export function RichMediaPopup() {
         handleNotificationDismissed as EventListener
       );
     };
-  }, [lastShownAppId, notificationData]);
+  }, [lastShownAppId, notificationData, customImage]);
   
   // Handle image loading
   const handleImageLoad = () => {
@@ -130,8 +137,10 @@ export function RichMediaPopup() {
   
   if (!notificationData) return null;
   
-  // Determine which image to display - prefer the one from the event, fallback to context
-  const displayImage = notificationData.mediaContent || customImage;
+  // Use the custom image from context as priority, fallback to mediaContent from event
+  const displayImage = notificationData.mediaContent;
+  
+  console.log("Rendering popup with image:", displayImage);
   
   return (
     <AnimatePresence>
@@ -141,7 +150,7 @@ export function RichMediaPopup() {
             className="p-0 overflow-hidden bg-background rounded-lg border shadow-lg max-w-md w-full"
             style={{ borderRadius: '12px' }}
           >
-            {/* Image Display - Use the mediaContent from notification or fallback to context */}
+            {/* Image Display - Use the custom image from context as priority */}
             {displayImage && (
               <div className="overflow-hidden flex justify-center w-full">
                 <img
@@ -177,11 +186,13 @@ export function RichMediaPopup() {
                   {notificationData.body}
                 </p>
                 
-                {/* Motivational message if present in context and not already in body */}
-                {customText && !notificationData.body.includes(customText) && (
-                  <p className="text-sm font-medium pt-2 italic">
-                    "{customText.replace("You're outside your focus zone. {app} is not in your whitelist.", "").trim()}"
-                  </p>
+                {/* Motivational message if present in context */}
+                {customText && customText.trim() && (
+                  <div className="pt-2 border-t border-border/50">
+                    <p className="text-sm font-medium italic text-primary">
+                      "{customText.replace("You're outside your focus zone. {app} is not in your whitelist.", "").trim()}"
+                    </p>
+                  </div>
                 )}
               </div>
               
