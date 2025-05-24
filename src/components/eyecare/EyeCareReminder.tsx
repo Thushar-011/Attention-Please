@@ -33,7 +33,7 @@ export function EyeCareReminder({ className }: EyeCareReminderProps) {
   // Initialize eye care tray functionality
   useEyeCareTray();
   
-  // Set up notifications for eye care events
+  // Set up notifications for eye care events - no timer update toasts
   useEffect(() => {
     if (isEyeCareResting && eyeCareTimeElapsed === 0) {
       // First frame of rest period - notify user
@@ -85,6 +85,7 @@ export function EyeCareReminder({ className }: EyeCareReminderProps) {
     } else {
       startEyeCareTimer();
     }
+    // No "timer settings updated" notification for eye care actions
   };
   
   const workProgress = ((eyeCareWorkDuration - eyeCareTimeElapsed) / eyeCareWorkDuration) * 100;
