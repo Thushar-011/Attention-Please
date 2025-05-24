@@ -1,12 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { TopNav } from "@/components/layout/TopNav";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { PomodoroTimer } from "@/components/timers/PomodoroTimer";
 import { EyeCareReminder } from "@/components/eyecare/EyeCareReminder";
 import { AppUsageList } from "@/components/dashboard/AppUsageList";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
-import { Clock, Eye, Activity, Zap, Settings, BarChart3 } from "lucide-react";
+import { Clock, Zap, Settings, BarChart3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import SystemTrayService from "@/services/SystemTrayService";
@@ -18,9 +18,7 @@ const Index = () => {
   
   // Real-time tracked data
   const [screenTime, setScreenTime] = useState<string | null>(null);
-  const [focusScore, setFocusScore] = useState<number | null>(null);
   const [distractionCount, setDistractionCount] = useState<number>(0);
-  const [eyeBreaks, setEyeBreaks] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   
   // Subscribe to real-time data updates
@@ -46,36 +44,13 @@ const Index = () => {
     
     // Listen for focus score updates
     const handleFocusScoreUpdate = (score: number, distractions: number) => {
-      setFocusScore(score);
       setDistractionCount(distractions);
       setIsLoading(false);
-    };
-    
-    // Listen for eye break updates - track completed eye breaks
-    const handleEyeBreakUpdate = (event: CustomEvent<{completed: boolean}>) => {
-      if (event.detail.completed) {
-        console.log("Eye break completed, updating counter");
-        setEyeBreaks(prev => prev + 1);
-      }
     };
     
     // Add listeners
     systemTray.addScreenTimeListener(handleScreenTimeUpdate);
     systemTray.addFocusScoreListener(handleFocusScoreUpdate);
-    window.addEventListener('eye-break-completed', handleEyeBreakUpdate as EventListener);
-    
-    // Load initial eye breaks count
-    const savedEyeBreaks = localStorage.getItem(`eyeBreaksCount-${userId}`);
-    if (savedEyeBreaks) {
-      try {
-        const count = parseInt(savedEyeBreaks);
-        if (!isNaN(count)) {
-          setEyeBreaks(count);
-        }
-      } catch (e) {
-        console.error("Failed to parse eye breaks count:", e);
-      }
-    }
     
     // Send request for user-specific data
     if (window.electron) {
@@ -87,25 +62,12 @@ const Index = () => {
       setIsLoading(false);
     }, 1500);
     
-    // Save eye breaks count when it changes
     return () => {
       systemTray.removeScreenTimeListener(handleScreenTimeUpdate);
       systemTray.removeFocusScoreListener(handleFocusScoreUpdate);
-      window.removeEventListener('eye-break-completed', handleEyeBreakUpdate as EventListener);
       clearTimeout(loadingTimeout);
-      
-      // Save eye breaks count
-      if (eyeBreaks > 0) {
-        localStorage.setItem(`eyeBreaksCount-${userId}`, eyeBreaks.toString());
-      }
     };
-  }, [user, eyeBreaks]);
-  
-  // Format focus score for display
-  const formatFocusScore = (score: number | null): string | null => {
-    if (score === null) return null;
-    return `${score}%`;
-  };
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,28 +95,13 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="animate-fade-in">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                title="Focus Score"
-                value={formatFocusScore(focusScore)}
-                icon={<Activity />}
-                description="How focused you've been today"
-                loading={isLoading}
-                trend={focusScore !== null && focusScore < 70 ? "down" : undefined}
-                trendValue={focusScore !== null && focusScore < 70 ? `${distractionCount} distractions detected` : undefined}
-              />
+            <div className="grid gap-6 md:grid-cols-2">
               <StatCard
                 title="Screen Time"
                 value={screenTime}
                 icon={<Clock />}
                 description="Total screen time today"
                 loading={isLoading}
-              />
-              <StatCard
-                title="Eye Breaks"
-                value={eyeBreaks > 0 ? eyeBreaks : 0}
-                icon={<Eye />}
-                description="Eye care breaks taken today"
               />
               <StatCard
                 title="Distractions"
@@ -165,8 +112,7 @@ const Index = () => {
               />
             </div>
 
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <ActivityChart emptyState={false} />
+            <div className="mt-6">
               <AppUsageList />
             </div>
           </TabsContent>

@@ -45,6 +45,9 @@ const TimerContext = createContext<TimerContextState | undefined>(undefined);
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   
+  // Track if this is the initial load to prevent showing success toast
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   // Pomodoro Timer state
   const [pomodoroMinutes, setPomodoroMinutes] = useState(() => {
     const saved = localStorage.getItem("pomodoroMinutes");
@@ -107,6 +110,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const startTimersTimeout = setTimeout(() => {
       setIsPomodoroActive(true);
       setIsEyeCareActive(true);
+      setIsInitialized(true); // Mark as initialized after auto-start
       console.log("Auto-started Pomodoro and Eye Care timers");
     }, 1500); // Short delay to ensure everything is loaded
 
@@ -136,7 +140,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("eyeCareRestDuration", eyeCareRestDuration.toString());
   }, [eyeCareTimeElapsed, isEyeCareActive, isEyeCareResting, eyeCareRestProgress, eyeCareWorkDuration, eyeCareRestDuration]);
 
-  // Function to update timer settings
+  // Function to update timer settings - only show toast when explicitly called by user
   const updateTimerSettings = (settings: TimerSettings) => {
     // Update Pomodoro settings
     setPomodoroDuration(settings.pomodoroDuration);
@@ -161,8 +165,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       resetEyeCareTimer();
     }
 
-    // Show success toast
-    sonnerToast.success("Timer settings updated successfully!");
+    // Only show success toast if this is a user-initiated update (not during initialization)
+    if (isInitialized) {
+      sonnerToast.success("Timer settings updated successfully!");
+    }
   };
 
   // Pomodoro Timer Logic
