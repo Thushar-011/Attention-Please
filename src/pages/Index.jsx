@@ -4,7 +4,8 @@ import { TopNav } from "@/components/layout/TopNav";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PomodoroTimer } from "@/components/timers/PomodoroTimer";
 import { EyeCareReminder } from "@/components/eyecare/EyeCareReminder.jsx";
-import { AppUsageList } from "@/components/dashboard/AppUsageList";
+import { HydrationCheck } from "@/components/health/HydrationCheck";
+import { PostureCheck } from "@/components/health/PostureCheck";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { Clock, Zap, Settings, BarChart3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -112,8 +113,9 @@ const Index = () => {
               />
             </div>
 
-            <div className="mt-6">
-              <AppUsageList />
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <HydrationCheck />
+              <PostureCheck />
             </div>
           </TabsContent>
 

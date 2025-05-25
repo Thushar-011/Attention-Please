@@ -19,14 +19,11 @@ export function useSystemTray() {
     systemTray.setTrayTooltip("Mindful Desktop Companion");
     setIsTrayActive(systemTray.isDesktopEnvironment());
     
-    // Add notification listener for focus alerts only (removed timer notifications)
+    // Cleanup notification handler - remove focus alerts to prevent malformed notifications
     const notificationHandler = (message: string, isFocusAlert: boolean) => {
-      // Only handle focus alerts, ignore timer notifications to prevent unwanted messages
-      if (isFocusAlert) {
-        // We no longer show toast notifications for focus alerts
-        // They are handled directly by the RichMediaPopup component
-      }
-      // Completely ignore non-focus alert notifications (like timer updates)
+      // Completely ignore all focus alert notifications to prevent malformed popups
+      // All focus handling is now done through the RichMediaPopup component
+      console.log('System tray notification ignored:', { message, isFocusAlert });
     };
     
     systemTray.addNotificationListener(notificationHandler);
