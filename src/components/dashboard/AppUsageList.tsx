@@ -7,7 +7,7 @@ import SystemTrayService from "@/services/SystemTrayService";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFocusMode } from "@/contexts/FocusModeContext";
 import { Badge } from "@/components/ui/badge";
-import { Shield, CheckCircle, XCircle } from "lucide-react";
+import { Shield } from "lucide-react";
 
 interface AppUsageItem {
   name: string;
@@ -24,7 +24,7 @@ export function AppUsageList({ className }: AppUsageListProps) {
   const [appUsageData, setAppUsageData] = useState<AppUsageItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { isFocusMode, whitelist, currentActiveApp, isCurrentAppWhitelisted } = useFocusMode();
+  const { isFocusMode, whitelist } = useFocusMode();
   
   useEffect(() => {
     const systemTray = SystemTrayService.getInstance();
@@ -84,13 +84,27 @@ export function AppUsageList({ className }: AppUsageListProps) {
     };
   }, [user]);
   
-  // Format milliseconds to time string (e.g. "2h 15m" or "45m" or "30s")
-  const formatTime = (ms: number): string => {
-    if (ms < 1000) return "1s"; // Show at least 1 second
+  // Fix time formatting - handle both milliseconds and seconds properly
+  const formatTime = (timeValue: number): string => {
+    if (timeValue < 1) return "1s"; // Show at least 1 second
     
-    const seconds = Math.floor((ms / 1000) % 60);
-    const minutes = Math.floor((ms / (1000 * 60)) % 60);
-    const hours = Math.floor(ms / (1000 * 60 * 60));
+    // If the value is very large, it's likely in milliseconds
+    // If it's a reasonable number, it's likely in seconds
+    let totalSeconds: number;
+    if (timeValue > 3600000) {
+      // Likely milliseconds (more than 1 hour in ms)
+      totalSeconds = Math.floor(timeValue / 1000);
+    } else if (timeValue > 3600) {
+      // Likely seconds (more than 1 hour in seconds)
+      totalSeconds = Math.floor(timeValue);
+    } else {
+      // Small value, treat as seconds but ensure minimum display
+      totalSeconds = Math.max(1, Math.floor(timeValue));
+    }
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
     
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
@@ -120,34 +134,6 @@ export function AppUsageList({ className }: AppUsageListProps) {
         )}
       </CardHeader>
       <CardContent>
-        {/* Live whitelist match preview - only show when focus mode is on */}
-        {isFocusMode && (
-          <div className={cn(
-            "mb-4 p-3 rounded-lg border",
-            isCurrentAppWhitelisted ? "bg-green-100/10 border-green-500/30" : "bg-red-100/10 border-red-500/30"
-          )}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium mb-1">Current Active App</div>
-                <div className="font-medium">{currentActiveApp || "No active window"}</div>
-              </div>
-              <div>
-                {isCurrentAppWhitelisted ? (
-                  <Badge className="bg-green-500 text-white flex items-center">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Allowed
-                  </Badge>
-                ) : (
-                  <Badge className="bg-red-500 text-white flex items-center">
-                    <XCircle className="h-3 w-3 mr-1" />
-                    Blocked
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -160,40 +146,48 @@ export function AppUsageList({ className }: AppUsageListProps) {
         ) : appUsageData.length > 0 ? (
           <ScrollArea className="h-[250px] pr-4">
             <div className="space-y-3">
-              {appUsageData.map((app) => (
-                <div
-                  key={app.name}
-                  className={cn(
-                    "flex items-center justify-between rounded-lg border p-3",
-                    isFocusMode && !isAppWhitelisted(app.name) && "bg-secondary/20 border-dashed"
-                  )}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={cn(
-                        "h-3 w-3 rounded-full",
-                        app.type === "productive" && "bg-attention-green-400",
-                        app.type === "distraction" && "bg-attention-warm-400",
-                        app.type === "communication" && "bg-attention-blue-400"
-                      )}
-                    ></div>
-                    <div className="flex items-center">
-                      <span>{app.name}</span>
-                      {isFocusMode && isAppWhitelisted(app.name) && (
-                        <Badge variant="outline" className="ml-2 text-xs border-green-500 text-green-500">
-                          Allowed
-                        </Badge>
-                      )}
-                      {isFocusMode && !isAppWhitelisted(app.name) && (
-                        <Badge variant="outline" className="ml-2 text-xs border-red-500 text-red-500">
-                          Blocked
-                        </Badge>
-                      )}
+              {appUsageData.map((app, index) => {
+                // Determine if app is whitelisted - cache the result to prevent flickering
+                const isWhitelisted = isAppWhitelisted(app.name);
+                
+                return (
+                  <div
+                    key={`${app.name}-${index}`}
+                    className={cn(
+                      "flex items-center justify-between rounded-lg border p-3 transition-colors duration-200",
+                      isFocusMode && !isWhitelisted && "bg-red-50/30 border-red-200/50",
+                      isFocusMode && isWhitelisted && "bg-green-50/30 border-green-200/50",
+                      !isFocusMode && "bg-background"
+                    )}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={cn(
+                          "h-3 w-3 rounded-full",
+                          app.type === "productive" && "bg-attention-green-400",
+                          app.type === "distraction" && "bg-attention-warm-400",
+                          app.type === "communication" && "bg-attention-blue-400"
+                        )}
+                      ></div>
+                      <div className="flex items-center">
+                        <span className="font-medium">{app.name}</span>
+                        {isFocusMode && (
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "ml-2 text-xs",
+                              isWhitelisted ? "border-green-500 text-green-700 bg-green-50" : "border-red-500 text-red-700 bg-red-50"
+                            )}
+                          >
+                            {isWhitelisted ? "Allowed" : "Blocked"}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
+                    <div className="text-sm font-medium">{formatTime(app.time)}</div>
                   </div>
-                  <div className="text-sm font-medium">{formatTime(app.time)}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         ) : (

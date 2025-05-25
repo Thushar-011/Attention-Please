@@ -1,15 +1,11 @@
 
 import { useEffect, useState } from 'react';
 import SystemTrayService from '@/services/SystemTrayService';
-import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
-import { useTimer } from '@/contexts/TimerContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusMode } from '@/contexts/FocusModeContext';
 
 export function useSystemTray() {
   const [isTrayActive, setIsTrayActive] = useState(false);
-  const { toast } = useToast();
   const auth = useAuth();
   const user = auth?.user;
   const { isFocusMode, whitelist } = useFocusMode();
@@ -23,23 +19,14 @@ export function useSystemTray() {
     systemTray.setTrayTooltip("Mindful Desktop Companion");
     setIsTrayActive(systemTray.isDesktopEnvironment());
     
-    // Add notification listener for focus alerts
+    // Add notification listener for focus alerts only (removed timer notifications)
     const notificationHandler = (message: string, isFocusAlert: boolean) => {
+      // Only handle focus alerts, ignore timer notifications to prevent unwanted messages
       if (isFocusAlert) {
-        // Use centered toast for focus alerts (eye breaks, focus reminders)
-        toast({
-          title: "Attention Reminder",
-          description: message,
-          duration: 8000, // Show longer for important focus notifications
-        });
-        
-        // We no longer need to send duplicate notifications to electron
-        // since they are now handled directly by the main process
-        // This prevents double notifications
-      } else {
-        // Use bottom-right toast for system notifications
-        sonnerToast(message);
+        // We no longer show toast notifications for focus alerts
+        // They are handled directly by the RichMediaPopup component
       }
+      // Completely ignore non-focus alert notifications (like timer updates)
     };
     
     systemTray.addNotificationListener(notificationHandler);
@@ -61,7 +48,7 @@ export function useSystemTray() {
       systemTray.hideTrayIcon();
       window.removeEventListener('notification-dismissed', handleNotificationDismissed as EventListener);
     };
-  }, [toast]);
+  }, []);
   
   // Load user preferences from MongoDB when component mounts
   useEffect(() => {
