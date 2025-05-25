@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useFocusMode } from "@/contexts/FocusModeContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { X, Plus, Upload, Image, CheckCircle, XCircle, AlertCircle, Eye } from "lucide-react";
+import { X, Plus, Upload, Image, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -21,15 +21,12 @@ export function FocusModeSettings() {
     whitelist, 
     addToWhitelist, 
     removeFromWhitelist,
-    dimInsteadOfBlock,
-    toggleDimOption,
     currentActiveApp,
     isCurrentAppWhitelisted,
     customImage,
     customText,
     updateCustomText,
-    updateCustomImage,
-    testFocusModePopup
+    updateCustomImage
   } = useFocusMode();
   
   const { user } = useAuth();
@@ -40,7 +37,6 @@ export function FocusModeSettings() {
   // Custom alert settings
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [editingText, setEditingText] = useState(customText || "");
-  const [previewText, setPreviewText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Update editing text when customText changes
@@ -102,11 +98,6 @@ export function FocusModeSettings() {
       
       setShowImageDialog(false);
       toast.success('Image updated successfully');
-      
-      // Show preview after a short delay
-      setTimeout(() => {
-        testFocusModePopup();
-      }, 500);
     }
   };
   
@@ -128,11 +119,6 @@ export function FocusModeSettings() {
       updateCustomText(fullText);
       
       toast.success('Message updated');
-      
-      // Show preview after updating text
-      setTimeout(() => {
-        testFocusModePopup();
-      }, 500);
     }
   };
   
@@ -152,27 +138,13 @@ export function FocusModeSettings() {
             <div className="space-y-0.5">
               <Label htmlFor="focus-mode">Enable Focus Mode</Label>
               <p className="text-sm text-muted-foreground">
-                Block or dim non-whitelisted apps and websites
+                Block non-whitelisted apps and websites
               </p>
             </div>
             <Switch 
               id="focus-mode" 
               checked={isFocusMode} 
               onCheckedChange={toggleFocusMode}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="dim-mode">Dim instead of block</Label>
-              <p className="text-sm text-muted-foreground">
-                Dim screen when using non-whitelisted apps instead of blocking them
-              </p>
-            </div>
-            <Switch 
-              id="dim-mode" 
-              checked={dimInsteadOfBlock} 
-              onCheckedChange={toggleDimOption}
             />
           </div>
         </div>
@@ -229,16 +201,6 @@ export function FocusModeSettings() {
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {customImage ? 'Change Image' : 'Upload Image'}
-                </Button>
-                
-                <Button
-                  onClick={testFocusModePopup}
-                  variant="secondary"
-                  size="sm"
-                  className="flex-1"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview Alert
                 </Button>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export function HydrationCheck({ className }: { className?: string }) {
   const [isEnabled, setIsEnabled] = useState(() => {
@@ -18,7 +18,6 @@ export function HydrationCheck({ className }: { className?: string }) {
   });
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastTickRef = useRef<number>(Date.now());
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -31,19 +30,15 @@ export function HydrationCheck({ className }: { className?: string }) {
 
   // Main timer logic
   useEffect(() => {
-    if (isEnabled && timeLeft > 0) {
-      lastTickRef.current = Date.now();
-      
+    if (isEnabled) {
       intervalRef.current = setInterval(() => {
         setTimeLeft((prevTime) => {
           const newTime = Math.max(0, prevTime - 1);
           
           if (newTime === 0) {
             // Timer completed - show notification
-            toast({
-              title: "💧 Hydration Reminder",
-              description: "Time to drink some water! Stay hydrated for better focus.",
-              duration: 8000,
+            toast.success("💧 Hydration Reminder: Time to drink some water! Stay hydrated for better focus.", {
+              duration: 5000,
             });
             
             // Send system notification if available
@@ -54,7 +49,7 @@ export function HydrationCheck({ className }: { className?: string }) {
               });
             }
             
-            // Reset timer to 30 minutes
+            // Auto-restart timer to 30 minutes
             return 30 * 60;
           }
           
@@ -62,7 +57,7 @@ export function HydrationCheck({ className }: { className?: string }) {
         });
       }, 1000);
     } else {
-      // Clear interval when disabled or time is 0
+      // Clear interval when disabled
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -76,7 +71,7 @@ export function HydrationCheck({ className }: { className?: string }) {
         intervalRef.current = null;
       }
     };
-  }, [isEnabled, toast]);
+  }, [isEnabled]);
 
   const toggleEnabled = () => {
     const newEnabled = !isEnabled;
