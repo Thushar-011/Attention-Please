@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import SystemTrayService from '@/services/SystemTrayService';
 import { toast } from "sonner";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 
 const FocusModeContext = createContext(undefined);
@@ -734,7 +733,7 @@ export const FocusModeProvider = ({ children }) => {
     
     // Get the custom image and text from state
     const imageUrl = customImage;
-    const alertText = customText || `You're outside your focus zone. ${appName} is not in your whitelist.`;
+    const alertText = customText || `You're outside your focus zone. {app} is not in your whitelist.`;
     
     // Set current alert app name and show the alert
     setCurrentAlertApp(appName);

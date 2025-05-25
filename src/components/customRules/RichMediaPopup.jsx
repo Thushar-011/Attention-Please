@@ -4,22 +4,16 @@ import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { X, Focus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useFocusMode } from "@/contexts/FocusModeContext";
 
 export function RichMediaPopup() {
-  const { customImage, customText } = useFocusMode();
   const [isOpen, setIsOpen] = useState(false);
   const [notificationData, setNotificationData] = useState(null);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [lastShownAppId, setLastShownAppId] = useState(null);
   
   // Listen for focus-mode popups
   useEffect(() => {
-    // Handler for focus mode popups
     const handleShowFocusPopup = (event) => {
       console.log("Received show-focus-popup event", event.detail);
-      console.log("Custom image from context:", customImage);
-      console.log("Media content from event:", event.detail.mediaContent);
       
       // Extract app ID to prevent duplicate popups
       const appIdMatch = event.detail.notificationId.match(/focus-mode-(.*?)-\d+/);
@@ -36,26 +30,17 @@ export function RichMediaPopup() {
         setLastShownAppId(currentAppId);
       }
       
-      // ALWAYS prioritize the custom image from context - this is the fix
-      const finalMediaContent = customImage;
-      
-      console.log("Final media content to display:", finalMediaContent);
-      console.log("Custom text from context:", customText);
-      
-      // Set notification data - Use custom image from context as priority
+      // Set notification data
       setNotificationData({
         title: event.detail.title,
         body: event.detail.body,
         notificationId: event.detail.notificationId,
-        appName: event.detail.appName,
-        mediaContent: finalMediaContent // Always use custom image from context
+        appName: event.detail.appName
       });
       
       setIsOpen(true);
-      setIsImageLoaded(false);
       
       console.log("Opening focus popup for app:", event.detail.appName);
-      console.log("With final custom media:", finalMediaContent || "None provided");
       
       // Auto-dismiss after 8 seconds
       setTimeout(() => {
@@ -88,18 +73,7 @@ export function RichMediaPopup() {
       window.removeEventListener('show-focus-popup', handleShowFocusPopup);
       window.removeEventListener('notification-dismissed', handleNotificationDismissed);
     };
-  }, [lastShownAppId, notificationData, customImage, customText]);
-  
-  // Handle image loading
-  const handleImageLoad = () => {
-    console.log("Image loaded successfully");
-    setIsImageLoaded(true);
-  };
-  
-  const handleImageError = () => {
-    console.error("Failed to load image");
-    setIsImageLoaded(true); // Still mark as loaded to show the dialog
-  };
+  }, [lastShownAppId, notificationData]);
   
   const handleDismiss = () => {
     setIsOpen(false);
@@ -116,19 +90,7 @@ export function RichMediaPopup() {
   
   if (!notificationData) return null;
   
-  // Always use the custom image from context as priority
-  const displayImage = customImage || notificationData.mediaContent;
-  
-  console.log("Rendering popup with image:", displayImage);
-  console.log("Custom text being used:", customText);
-  
-  // Extract the system message and motivational text
-  const systemMessage = "You're outside your focus zone. {app} is not in your whitelist.";
-  const bodyText = notificationData.body.replace('{app}', notificationData.appName || 'This app');
-  
-  // Check if there's additional motivational text beyond the system message
-  const motivationalText = customText && customText !== systemMessage ? 
-    customText.replace(systemMessage, '').trim() : '';
+  const bodyText = notificationData.body;
   
   return (
     <AnimatePresence>
@@ -138,19 +100,6 @@ export function RichMediaPopup() {
             className="p-0 overflow-hidden bg-background rounded-lg border shadow-lg max-w-md w-full"
             style={{ borderRadius: '12px' }}
           >
-            {/* Image Display - Always prioritize custom image from context */}
-            {displayImage && (
-              <div className="overflow-hidden flex justify-center w-full">
-                <img
-                  src={displayImage}
-                  alt="Focus reminder"
-                  className="w-full object-cover max-h-[240px] rounded-t-lg"
-                  onLoad={handleImageLoad}
-                  onError={handleImageError}
-                />
-              </div>
-            )}
-            
             <div className="p-6 space-y-4 relative">
               {/* Close button */}
               <Button
@@ -173,15 +122,6 @@ export function RichMediaPopup() {
                 <p className="text-muted-foreground">
                   {bodyText}
                 </p>
-                
-                {/* Motivational message if present and different from system message */}
-                {motivationalText && (
-                  <div className="pt-2 border-t border-border/50">
-                    <p className="text-sm font-medium italic text-primary">
-                      "{motivationalText}"
-                    </p>
-                  </div>
-                )}
               </div>
               
               <div className="flex justify-end pt-2">
