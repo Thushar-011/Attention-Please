@@ -651,8 +651,42 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     }, 50);
     
-  }, [isFocusMode, lastActiveWindow, whitelist]);
-  
+  }, [isFocusMode, lastActiveWindow, whitelist, handleNonWhitelistedApp]);
+
+  // Add missing function implementations
+  const addToWhitelist = useCallback((app: string) => {
+    if (app && !whitelist.includes(app)) {
+      const newWhitelist = [...whitelist, app];
+      setWhitelist(newWhitelist);
+    }
+  }, [whitelist]);
+
+  const removeFromWhitelist = useCallback((app: string) => {
+    const newWhitelist = whitelist.filter(item => item !== app);
+    setWhitelist(newWhitelist);
+  }, [whitelist]);
+
+  const toggleDimOption = useCallback(() => {
+    setDimInsteadOfBlock(!dimInsteadOfBlock);
+  }, [dimInsteadOfBlock]);
+
+  const updateCustomText = useCallback((text: string) => {
+    setCustomText(text);
+  }, []);
+
+  const updateCustomImage = useCallback((imageUrl: string | null) => {
+    setCustomImage(imageUrl);
+    if (imageUrl) {
+      localStorage.setItem(`focusModeCustomImage-${userId}`, imageUrl);
+    } else {
+      localStorage.removeItem(`focusModeCustomImage-${userId}`);
+    }
+  }, [userId]);
+
+  const testFocusModePopup = useCallback(() => {
+    handleNonWhitelistedApp("Test Application");
+  }, [handleNonWhitelistedApp]);
+
   // Create the context value object
   const contextValue: FocusModeContextType = {
     isFocusMode,
