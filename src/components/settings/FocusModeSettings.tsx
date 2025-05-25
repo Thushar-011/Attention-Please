@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -30,33 +31,27 @@ export function FocusModeSettings() {
   } = useFocusMode();
   
   const { user } = useAuth();
-  const userId = user?.id || 'guest';
   
   const [newApp, setNewApp] = useState("");
-  
-  // Custom alert settings
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [editingText, setEditingText] = useState(customText || "");
+  const [editingText, setEditingText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Update editing text when customText changes
+  // Update editing text when customText changes - with proper dependency management
   useEffect(() => {
-    if (customText) {
+    if (customText && customText !== editingText) {
       setEditingText(customText);
     }
-  }, [customText]);
+  }, [customText]); // Removed editingText from dependencies to prevent infinite loop
 
   // Format the text for preview/saving to include both parts
   const formatFullText = (text: string): string => {
-    // Make sure we always have the default system message
     const systemMessage = "You're outside your focus zone. {app} is not in your whitelist.";
     
-    // If the provided text already contains the system message, return as is
     if (text.includes(systemMessage)) {
       return text;
     }
     
-    // Otherwise append the motivational text to the system message
     return `${systemMessage} ${text}`;
   };
   
@@ -80,19 +75,16 @@ export function FocusModeSettings() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Validate file is an image
       if (!file.type.startsWith('image/')) {
         toast.error('Please upload an image file (PNG, JPG, WebP)');
         return;
       }
       
-      // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image is too large (max 5MB)');
         return;
       }
       
-      // Create URL for the uploaded file
       const imageUrl = URL.createObjectURL(file);
       updateCustomImage(imageUrl);
       
@@ -114,10 +106,8 @@ export function FocusModeSettings() {
   
   const handleUpdateCustomText = () => {
     if (editingText) {
-      // Format the text to include the system message
       const fullText = formatFullText(editingText);
       updateCustomText(fullText);
-      
       toast.success('Message updated');
     }
   };
