@@ -10,74 +10,64 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 export function PomodoroTimer() {
   const {
-    timeLeft,
-    isRunning,
-    currentSession,
-    workTime,
-    shortBreakTime,
-    longBreakTime,
-    sessionsUntilLongBreak,
-    completedSessions,
-    startTimer,
-    pauseTimer,
-    resetTimer,
-    updateSettings
+    pomodoroMinutes,
+    pomodoroSeconds,
+    isPomodoroActive,
+    isPomodoroBreak,
+    pomodoroDuration,
+    pomodoroBreakDuration,
+    pomodoroProgress,
+    startPomodoroTimer,
+    pausePomodoroTimer,
+    resetPomodoroTimer,
+    updateTimerSettings
   } = useTimer();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tempSettings, setTempSettings] = useState({
-    workTime,
-    shortBreakTime,
-    longBreakTime,
-    sessionsUntilLongBreak
+    workTime: pomodoroDuration * 60,
+    shortBreakTime: pomodoroBreakDuration * 60,
+    longBreakTime: 15 * 60,
+    sessionsUntilLongBreak: 4
   });
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTime = (minutes: number, seconds: number) => {
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const getSessionName = () => {
-    switch (currentSession) {
-      case 'work': return 'Work Session';
-      case 'shortBreak': return 'Short Break';
-      case 'longBreak': return 'Long Break';
-      default: return 'Pomodoro Timer';
-    }
+    return isPomodoroBreak ? 'Break Time' : 'Work Session';
   };
 
   const getSessionColor = () => {
-    switch (currentSession) {
-      case 'work': return 'text-red-500';
-      case 'shortBreak': return 'text-green-500';
-      case 'longBreak': return 'text-blue-500';
-      default: return 'text-gray-500';
-    }
+    return isPomodoroBreak ? 'text-green-500' : 'text-red-500';
   };
 
   const handleSaveSettings = () => {
-    updateSettings(tempSettings);
+    updateTimerSettings({
+      pomodoroDuration: tempSettings.workTime / 60,
+      pomodoroBreakDuration: tempSettings.shortBreakTime / 60,
+      eyeCareWorkDuration: 20 * 60,
+      eyeCareRestDuration: 20,
+    });
     setSettingsOpen(false);
   };
 
-  // Progress calculation
-  const getTotalTime = () => {
-    switch (currentSession) {
-      case 'work': return workTime;
-      case 'shortBreak': return shortBreakTime;
-      case 'longBreak': return longBreakTime;
-      default: return workTime;
-    }
-  };
-
-  const progress = ((getTotalTime() - timeLeft) / getTotalTime()) * 100;
+  // Update temp settings when actual settings change
+  useEffect(() => {
+    setTempSettings({
+      workTime: pomodoroDuration * 60,
+      shortBreakTime: pomodoroBreakDuration * 60,
+      longBreakTime: 15 * 60,
+      sessionsUntilLongBreak: 4
+    });
+  }, [pomodoroDuration, pomodoroBreakDuration]);
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="flex items-center justify-between">
-          <span className={getSessionColor()}>{getSessionName()}</span>
+          <span className={getSessionName()}>{getSessionName()}</span>
           <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -104,7 +94,7 @@ export function PomodoroTimer() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="short-break">Short Break (minutes)</Label>
+                  <Label htmlFor="short-break">Break Time (minutes)</Label>
                   <Input
                     id="short-break"
                     type="number"
@@ -118,36 +108,6 @@ export function PomodoroTimer() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="long-break">Long Break (minutes)</Label>
-                  <Input
-                    id="long-break"
-                    type="number"
-                    value={tempSettings.longBreakTime / 60}
-                    onChange={(e) => setTempSettings(prev => ({
-                      ...prev,
-                      longBreakTime: parseInt(e.target.value) * 60 || 900
-                    }))}
-                    min="1"
-                    max="60"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sessions-until-long">Sessions until Long Break</Label>
-                  <Input
-                    id="sessions-until-long"
-                    type="number"
-                    value={tempSettings.sessionsUntilLongBreak}
-                    onChange={(e) => setTempSettings(prev => ({
-                      ...prev,
-                      sessionsUntilLongBreak: parseInt(e.target.value) || 4
-                    }))}
-                    min="2"
-                    max="10"
-                  />
-                </div>
-
                 <div className="flex gap-2">
                   <Button onClick={handleSaveSettings} className="flex-1">
                     Save
@@ -156,10 +116,10 @@ export function PomodoroTimer() {
                     variant="outline" 
                     onClick={() => {
                       setTempSettings({
-                        workTime,
-                        shortBreakTime,
-                        longBreakTime,
-                        sessionsUntilLongBreak
+                        workTime: pomodoroDuration * 60,
+                        shortBreakTime: pomodoroBreakDuration * 60,
+                        longBreakTime: 15 * 60,
+                        sessionsUntilLongBreak: 4
                       });
                       setSettingsOpen(false);
                     }}
@@ -173,7 +133,7 @@ export function PomodoroTimer() {
           </Popover>
         </CardTitle>
         <CardDescription>
-          Session {completedSessions + 1} • {completedSessions} completed
+          Pomodoro Timer • {isPomodoroBreak ? 'Take a break!' : 'Stay focused!'}
         </CardDescription>
       </CardHeader>
       
@@ -199,13 +159,11 @@ export function PomodoroTimer() {
                 strokeWidth="8"
                 fill="none"
                 className={`transition-all duration-1000 ease-in-out ${
-                  currentSession === 'work' ? 'stroke-red-500' :
-                  currentSession === 'shortBreak' ? 'stroke-green-500' :
-                  'stroke-blue-500'
+                  isPomodoroBreak ? 'stroke-green-500' : 'stroke-red-500'
                 }`}
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 40}`}
-                strokeDashoffset={`${2 * Math.PI * 40 * (1 - progress / 100)}`}
+                strokeDashoffset={`${2 * Math.PI * 40 * (1 - pomodoroProgress / 100)}`}
               />
             </svg>
             
@@ -213,7 +171,7 @@ export function PomodoroTimer() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div className="text-4xl font-mono font-bold">
-                  {formatTime(timeLeft)}
+                  {formatTime(pomodoroMinutes, pomodoroSeconds)}
                 </div>
               </div>
             </div>
@@ -223,16 +181,16 @@ export function PomodoroTimer() {
         {/* Controls */}
         <div className="flex gap-2 justify-center">
           <Button
-            onClick={isRunning ? pauseTimer : startTimer}
+            onClick={isPomodoroActive ? pausePomodoroTimer : startPomodoroTimer}
             size="lg"
             className="flex items-center gap-2"
           >
-            {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            {isRunning ? 'Pause' : 'Start'}
+            {isPomodoroActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isPomodoroActive ? 'Pause' : 'Start'}
           </Button>
           
           <Button
-            onClick={resetTimer}
+            onClick={() => resetPomodoroTimer(isPomodoroBreak)}
             variant="outline"
             size="lg"
             className="flex items-center gap-2"
