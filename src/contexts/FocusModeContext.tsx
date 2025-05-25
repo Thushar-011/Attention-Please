@@ -53,7 +53,6 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [lastNotificationDismissed, setLastNotificationDismissed] = useState<string | null>(null);
   const [showingAlert, setShowingAlert] = useState(false);
   const [currentAlertApp, setCurrentAlertApp] = useState<string | null>(null);
-  const { toast: centerToast } = useToast();
   
   // Add tracking variables for real-time monitoring
   const [checkInterval, setCheckInterval] = useState<NodeJS.Timeout | null>(null);
@@ -91,6 +90,58 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Track current user to reset focus mode state on user change
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Enhanced handler for non-whitelisted apps to use rich media popup
+  const handleNonWhitelistedApp = useCallback((appName: string) => {
+    // Skip notification for system apps
+    if (DEFAULT_WHITELIST_APPS.some(defaultApp => 
+        appName.toLowerCase().includes(defaultApp.toLowerCase()) ||
+        defaultApp.toLowerCase().includes(appName.toLowerCase()))) {
+      return;
+    }
+    
+    console.log("Handling non-whitelisted app:", appName);
+    console.log("Using custom image:", customImage);
+    console.log("Using custom text:", customText);
+    
+    // Update tracking to remember we've shown notification for this app
+    setLastNotifiedApp(appName);
+    
+    // Get the custom image and text from state
+    const imageUrl = customImage;
+    const alertText = customText || `You're outside your focus zone. {app} is not in your whitelist.`;
+    
+    // Set current alert app name and show the alert
+    setCurrentAlertApp(appName);
+    setShowingAlert(true);
+    
+    // Create a unique notification ID with timestamp and app name
+    const notificationId = `focus-mode-${appName}-${Date.now()}`;
+    
+    // Use rich media popup for focus mode alerts
+    const focusRuleEvent = new CustomEvent('show-focus-popup', { 
+      detail: {
+        title: "Focus Mode Alert",
+        body: alertText.replace('{app}', appName),
+        notificationId: notificationId,
+        mediaType: imageUrl ? 'image' : 'none',
+        mediaContent: imageUrl,
+        appName: appName
+      }
+    });
+    
+    console.log("Dispatching focus popup event with image:", imageUrl);
+    window.dispatchEvent(focusRuleEvent);
+    
+    // If we're in dim mode, apply dimming effect to the screen
+    if (dimInsteadOfBlock) {
+      applyDimEffect();
+    }
+    
+    // Update the timestamp for this app's notification
+    appNotificationTimestamps.current[appName] = Date.now();
+    lastPopupShownTime.current = Date.now();
+  }, [customImage, customText, dimInsteadOfBlock]);
 
   // Reset focus mode state when user changes
   useEffect(() => {
@@ -596,61 +647,58 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
     }
     
-    // Short delay to allow stabilization message to be processed
-    setTimeout(() => {
-      setIsFocusMode(newState);
-      
-      // Reset tracking state when toggling focus mode
-      setNotificationShown({});
-      setWasInWhitelistedApp(false);
-      setLastNotifiedApp(null);
-      setProcessedSwitches(new Set());
-      
-      // Reset notification timestamps and flags
-      appNotificationTimestamps.current = {};
-      lastPopupShownTime.current = 0;
-      isHandlingNotificationRef.current = false;
-      
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
-      
-      // Send to electron main process to update tray icon
-      if (window.electron) {
-        window.electron.send('toggle-focus-mode', newState);
-        
-        // Add a stabilization message to prevent UI glitches
-        window.electron.send('stabilize-window', { 
-          isFocusMode: newState,
-          timestamp: Date.now()
-        });
-      }
-      
-      if (newState) {
-        // Immediately check current window against whitelist
-        if (lastActiveWindow) {
-          const currentAppName = extractAppName(lastActiveWindow);
-          const mergedWhitelist = [...new Set([...whitelist, ...DEFAULT_WHITELIST_APPS])];
-          const isCurrentAppWhitelisted = isAppInWhitelist(currentAppName, mergedWhitelist);
-          
-          // Update tracking state based on current app
-          setWasInWhitelistedApp(isCurrentAppWhitelisted);
-          
-          if (!isCurrentAppWhitelisted && currentAppName) {
-            // Small delay to allow toggle to complete first
-            setTimeout(() => {
-              handleNonWhitelistedApp(currentAppName);
-            }, 500);
-          }
-        }
-      } else {
-        // Clear any alert when disabling focus mode
-        setShowingAlert(false);
-        setCurrentAlertApp(null);
-      }
-    }, 50);
+    // Update state immediately
+    setIsFocusMode(newState);
     
+    // Reset tracking state when toggling focus mode
+    setNotificationShown({});
+    setWasInWhitelistedApp(false);
+    setLastNotifiedApp(null);
+    setProcessedSwitches(new Set());
+    
+    // Reset notification timestamps and flags
+    appNotificationTimestamps.current = {};
+    lastPopupShownTime.current = 0;
+    isHandlingNotificationRef.current = false;
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    
+    // Send to electron main process to update tray icon
+    if (window.electron) {
+      window.electron.send('toggle-focus-mode', newState);
+      
+      // Add a stabilization message to prevent UI glitches
+      window.electron.send('stabilize-window', { 
+        isFocusMode: newState,
+        timestamp: Date.now()
+      });
+    }
+    
+    if (newState) {
+      // Immediately check current window against whitelist
+      if (lastActiveWindow) {
+        const currentAppName = extractAppName(lastActiveWindow);
+        const mergedWhitelist = [...new Set([...whitelist, ...DEFAULT_WHITELIST_APPS])];
+        const isCurrentAppWhitelisted = isAppInWhitelist(currentAppName, mergedWhitelist);
+        
+        // Update tracking state based on current app
+        setWasInWhitelistedApp(isCurrentAppWhitelisted);
+        
+        if (!isCurrentAppWhitelisted && currentAppName) {
+          // Small delay to allow toggle to complete first
+          setTimeout(() => {
+            handleNonWhitelistedApp(currentAppName);
+          }, 500);
+        }
+      }
+    } else {
+      // Clear any alert when disabling focus mode
+      setShowingAlert(false);
+      setCurrentAlertApp(null);
+    }
   }, [isFocusMode, lastActiveWindow, whitelist, handleNonWhitelistedApp]);
 
   // Add missing function implementations
@@ -686,6 +734,17 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const testFocusModePopup = useCallback(() => {
     handleNonWhitelistedApp("Test Application");
   }, [handleNonWhitelistedApp]);
+
+  // Helper functions
+  const applyDimEffect = () => {
+    // In a real implementation, we would dim the screen via Electron
+    console.log("Applying dimming effect to screen");
+    if (window.electron) {
+      window.electron.send('apply-screen-dim', { 
+        opacity: 0.7 
+      });
+    }
+  };
 
   // Create the context value object
   const contextValue: FocusModeContextType = {
