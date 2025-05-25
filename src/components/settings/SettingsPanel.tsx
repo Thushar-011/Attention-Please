@@ -17,6 +17,7 @@ import * as z from "zod";
 import { toast as sonnerToast } from "sonner";
 import { FocusModeSettings } from "./FocusModeSettings";
 import { useTimer } from "@/contexts/TimerContext";
+import { useEffect } from "react";
 
 const timerSettingsSchema = z.object({
   pomodoroDuration: z.number().min(1).max(120),
@@ -46,16 +47,22 @@ export function SettingsPanel() {
     },
   });
 
+  // Update form values when timer context values change
+  useEffect(() => {
+    timerForm.reset({
+      pomodoroDuration,
+      pomodoroBreakDuration,
+      eyeCareWorkDuration: Math.floor(eyeCareWorkDuration / 60),
+      eyeCareRestDuration,
+    });
+  }, [pomodoroDuration, pomodoroBreakDuration, eyeCareWorkDuration, eyeCareRestDuration, timerForm]);
+
   const onTimerSettingsSave = (data: TimerSettingsValues) => {
     updateTimerSettings({
       pomodoroDuration: data.pomodoroDuration,
       pomodoroBreakDuration: data.pomodoroBreakDuration,
       eyeCareWorkDuration: data.eyeCareWorkDuration * 60,
       eyeCareRestDuration: data.eyeCareRestDuration,
-    });
-    
-    sonnerToast("Timer settings saved", {
-      description: "Your timer preferences have been updated.",
     });
   };
 

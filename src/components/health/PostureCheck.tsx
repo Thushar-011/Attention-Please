@@ -8,17 +8,56 @@ import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
 export function PostureCheck({ className }: { className?: string }) {
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 minutes default
-  const [isActive, setIsActive] = useState(false);
+  // Use localStorage to persist state across tab changes
+  const [isEnabled, setIsEnabled] = useState(() => {
+    const saved = localStorage.getItem("postureEnabled");
+    return saved ? JSON.parse(saved) : false;
+  });
+  
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const saved = localStorage.getItem("postureTimeLeft");
+    return saved ? parseInt(saved) : 45 * 60;
+  });
+  
+  const [lastUpdateTime, setLastUpdateTime] = useState(() => {
+    const saved = localStorage.getItem("postureLastUpdate");
+    return saved ? parseInt(saved) : Date.now();
+  });
+
+  // Calculate actual time left based on elapsed time since last update
+  useEffect(() => {
+    if (isEnabled) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - lastUpdateTime) / 1000);
+      const actualTimeLeft = Math.max(0, timeLeft - elapsed);
+      
+      if (actualTimeLeft !== timeLeft) {
+        setTimeLeft(actualTimeLeft);
+      }
+    }
+  }, [isEnabled, timeLeft, lastUpdateTime]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("postureEnabled", JSON.stringify(isEnabled));
+  }, [isEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem("postureTimeLeft", timeLeft.toString());
+  }, [timeLeft]);
+
+  useEffect(() => {
+    localStorage.setItem("postureLastUpdate", Date.now().toString());
+  }, [timeLeft]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
-    if (isEnabled && isActive && timeLeft > 0) {
+    if (isEnabled && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
-          if (prev <= 1) {
+          const newTime = Math.max(0, prev - 1);
+          if (newTime <= 0) {
             // Time's up - show notification
             toast({
               title: "🧘 Posture Reminder",
@@ -37,23 +76,23 @@ export function PostureCheck({ className }: { className?: string }) {
             // Reset timer
             return 45 * 60; // Reset to 45 minutes
           }
-          return prev - 1;
+          return newTime;
         });
+        setLastUpdateTime(Date.now());
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isEnabled, isActive, timeLeft]);
+  }, [isEnabled, timeLeft]);
 
   const toggleEnabled = () => {
-    setIsEnabled(!isEnabled);
-    if (!isEnabled) {
-      setIsActive(true);
+    const newEnabled = !isEnabled;
+    setIsEnabled(newEnabled);
+    if (newEnabled) {
       setTimeLeft(45 * 60);
-    } else {
-      setIsActive(false);
+      setLastUpdateTime(Date.now());
     }
   };
 

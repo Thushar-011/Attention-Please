@@ -702,7 +702,7 @@ class SystemTrayService {
       });
     }
     
-    // Apply dimming effect if that option is selected
+    // Apply dimming effect (removed the "instead of block" text)
     if (this.dimInsteadOfBlock) {
       // In a real implementation, we would dim the screen via Electron
       console.log("Applying dimming effect to screen");

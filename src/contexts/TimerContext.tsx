@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
@@ -141,7 +142,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("eyeCareRestDuration", eyeCareRestDuration.toString());
   }, [eyeCareTimeElapsed, isEyeCareActive, isEyeCareResting, eyeCareRestProgress, eyeCareWorkDuration, eyeCareRestDuration]);
 
-  // Function to update timer settings - only show toast when explicitly called by user
+  // Function to update timer settings - properly sync with active timers
   const updateTimerSettings = (settings: TimerSettings) => {
     // Mark this as a user-triggered update
     setIsUserTriggeredUpdate(true);
@@ -160,13 +161,17 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("eyeCareWorkDuration", settings.eyeCareWorkDuration.toString());
     localStorage.setItem("eyeCareRestDuration", settings.eyeCareRestDuration.toString());
     
-    // Reset timers with new durations
+    // If timers are currently inactive, reset them with new durations
     if (!isPomodoroActive) {
-      resetPomodoroTimer(isPomodoroBreak);
+      setPomodoroMinutes(isPomodoroBreak ? settings.pomodoroBreakDuration : settings.pomodoroDuration);
+      setPomodoroSeconds(0);
+      setPomodoroProgress(100);
     }
     
     if (!isEyeCareActive) {
-      resetEyeCareTimer();
+      setEyeCareTimeElapsed(0);
+      setIsEyeCareResting(false);
+      setEyeCareRestProgress(0);
     }
 
     // Only show success toast if this is a user-initiated update AND the component is initialized
