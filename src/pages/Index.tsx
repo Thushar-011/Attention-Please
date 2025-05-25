@@ -27,6 +27,9 @@ const Index = () => {
     const systemTray = SystemTrayService.getInstance();
     const userId = user?.id || 'guest';
     
+    // Set current user to ensure proper data isolation
+    systemTray.setCurrentUser(userId);
+    
     // Get initial screen time
     const initialScreenTime = systemTray.getFormattedScreenTime();
     if (initialScreenTime !== "0h 0m") {

@@ -1,4 +1,3 @@
-
 // This service handles system tray functionality and active window monitoring
 
 class SystemTrayService {
@@ -51,6 +50,9 @@ class SystemTrayService {
   // Default whitelist apps that should never trigger focus alerts
   private readonly DEFAULT_WHITELIST_APPS = ['Electron', 'electron', 'Mindful Desktop Companion', 'chrome-devtools'];
   
+  // User tracking
+  private currentUserId: string | null = null;
+  
   private persistedData: {
     screenTimeToday: number,
     focusScore: number,
@@ -66,9 +68,6 @@ class SystemTrayService {
     
     // Check if running in Electron or similar desktop environment
     this.isDesktopApp = this.checkIsDesktopApp();
-    
-    // Try to load persisted data from localStorage on initialization
-    this.loadPersistedData();
     
     // Initialize screen time tracking
     this.initializeScreenTimeTracking();
@@ -90,9 +89,70 @@ class SystemTrayService {
     }, 300000);
   }
 
+  // Get user-specific localStorage key
+  private getUserStorageKey(userId: string): string {
+    return `systemTrayData_${userId}`;
+  }
+
+  // Set current user and load their data
+  public setCurrentUser(userId: string): void {
+    if (this.currentUserId === userId) return;
+    
+    // Save current user's data before switching
+    if (this.currentUserId) {
+      this.persistData();
+    }
+    
+    // Reset all data to defaults
+    this.resetToDefaults();
+    
+    // Set new user
+    this.currentUserId = userId;
+    
+    // Load new user's data
+    this.loadPersistedData();
+    
+    // Notify all listeners of the reset
+    this.notifyAllListeners();
+    
+    console.log(`Switched to user: ${userId}`);
+  }
+
+  // Reset all tracking data to default values
+  private resetToDefaults(): void {
+    this.screenTimeToday = 0;
+    this.focusScore = 100;
+    this.distractionCount = 0;
+    this.appUsageData.clear();
+    this.isFocusMode = false;
+    this.focusModeWhitelist = [...this.DEFAULT_WHITELIST_APPS];
+    this.dimInsteadOfBlock = true;
+    this.recentSwitches = 0;
+    this.processedNotifications.clear();
+    this.notificationThrottleMap.clear();
+    this.lastActiveWindow = null;
+    this.windowSwitches = 0;
+    
+    // Reset timers
+    this.screenTimeStart = Date.now();
+    this.lastActivityTime = Date.now();
+    this.lastScreenTimeUpdate = Date.now();
+    this.userIdleTime = 0;
+    
+    console.log("Reset all data to defaults");
+  }
+
+  // Notify all listeners after user switch
+  private notifyAllListeners(): void {
+    this.notifyScreenTimeListeners();
+    this.notifyFocusScoreListeners();
+    this.notifyAppUsageListeners();
+    this.notifyFocusModeListeners();
+  }
+
   // Persist data to localStorage before app closes or minimizes
   private persistData(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.currentUserId) return;
     
     try {
       const dataToSave = {
@@ -111,8 +171,9 @@ class SystemTrayService {
         timestamp: Date.now()
       };
       
-      localStorage.setItem('systemTrayData', JSON.stringify(dataToSave));
-      console.log("Persisted data to localStorage:", dataToSave);
+      const storageKey = this.getUserStorageKey(this.currentUserId);
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+      console.log(`Persisted data to localStorage for user ${this.currentUserId}:`, dataToSave);
     } catch (error) {
       console.error("Failed to persist data:", error);
     }
@@ -120,11 +181,15 @@ class SystemTrayService {
   
   // Load persisted data from localStorage
   private loadPersistedData(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.currentUserId) return;
     
     try {
-      const savedData = localStorage.getItem('systemTrayData');
-      if (!savedData) return;
+      const storageKey = this.getUserStorageKey(this.currentUserId);
+      const savedData = localStorage.getItem(storageKey);
+      if (!savedData) {
+        console.log(`No saved data found for user ${this.currentUserId}, using defaults`);
+        return;
+      }
       
       const parsedData = JSON.parse(savedData);
       const timestamp = parsedData.timestamp || 0;
@@ -169,10 +234,10 @@ class SystemTrayService {
           });
         }
         
-        console.log("Loaded persisted data from localStorage:", parsedData);
+        console.log(`Loaded persisted data from localStorage for user ${this.currentUserId}:`, parsedData);
       } else {
-        console.log("Saved data is too old, starting fresh");
-        localStorage.removeItem('systemTrayData');
+        console.log(`Saved data is too old for user ${this.currentUserId}, starting fresh`);
+        localStorage.removeItem(storageKey);
       }
     } catch (error) {
       console.error("Failed to load persisted data:", error);
@@ -477,7 +542,7 @@ class SystemTrayService {
     // Default to productive if unknown
     return "productive";
   }
-  
+
   // Add a screen time listener
   public addScreenTimeListener(callback: (screenTime: number) => void): void {
     this.screenTimeListeners.push(callback);

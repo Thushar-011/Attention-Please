@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -29,6 +28,9 @@ export function AppUsageList({ className }: AppUsageListProps) {
   useEffect(() => {
     const systemTray = SystemTrayService.getInstance();
     const userId = user?.id || 'guest';
+    
+    // Set current user to ensure proper data isolation
+    systemTray.setCurrentUser(userId);
     
     // Subscribe to app usage updates
     const handleAppUsageUpdate = (appUsage: Array<{name: string, time: number, type: string, lastActiveTime?: number}>) => {
