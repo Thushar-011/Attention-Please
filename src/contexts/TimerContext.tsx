@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -89,7 +88,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   });
   const [isEyeCareActive, setIsEyeCareActive] = useState(() => {
     const saved = localStorage.getItem(`isEyeCareActive-${userId}`);
-    return saved ? saved === "true" : false;
+    return saved ? saved === "true" : true; // Auto-start eye care timer for new users
   });
   const [isEyeCareResting, setIsEyeCareResting] = useState(() => {
     const saved = localStorage.getItem(`isEyeCareResting-${userId}`);
@@ -108,10 +107,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     return saved ? parseInt(saved) : 20; // Default: 20 seconds
   });
 
-  // Reset timers when user changes
+  // Reset timers when user changes and auto-start them
   useEffect(() => {
     if (currentUserId !== userId) {
-      console.log(`User changed from ${currentUserId} to ${userId}, resetting timers`);
+      console.log(`User changed from ${currentUserId} to ${userId}, resetting and auto-starting timers`);
       
       // Reset all timer states to defaults for new user
       setPomodoroMinutes(25);
@@ -123,7 +122,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       setPomodoroBreakDuration(5);
       
       setEyeCareTimeElapsed(0);
-      setIsEyeCareActive(false);
+      setIsEyeCareActive(true); // Auto-start eye care timer
       setIsEyeCareResting(false);
       setEyeCareRestProgress(0);
       setEyeCareWorkDuration(20 * 60);
@@ -183,8 +182,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       setIsEyeCareResting(false);
       setEyeCareRestProgress(0);
     }
-
-    // Completely removed the unwanted toast notification
   };
 
   // Pomodoro Timer Logic
