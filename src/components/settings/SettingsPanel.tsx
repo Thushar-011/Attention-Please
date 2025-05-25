@@ -14,7 +14,6 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } fr
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { toast as sonnerToast } from "sonner";
 import { FocusModeSettings } from "./FocusModeSettings";
 import { useTimer } from "@/contexts/TimerContext";
 import { useEffect } from "react";
