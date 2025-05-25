@@ -1,15 +1,14 @@
 
+
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useFocusMode } from "@/contexts/FocusModeContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { X, Plus, Upload, Image, CheckCircle, XCircle, AlertCircle } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { X, Plus, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -23,37 +22,12 @@ export function FocusModeSettings() {
     addToWhitelist, 
     removeFromWhitelist,
     currentActiveApp,
-    isCurrentAppWhitelisted,
-    customImage,
-    customText,
-    updateCustomText,
-    updateCustomImage
+    isCurrentAppWhitelisted
   } = useFocusMode();
   
   const { user } = useAuth();
   
   const [newApp, setNewApp] = useState("");
-  const [showImageDialog, setShowImageDialog] = useState(false);
-  const [editingText, setEditingText] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Update editing text when customText changes - with proper dependency management
-  useEffect(() => {
-    if (customText && customText !== editingText) {
-      setEditingText(customText);
-    }
-  }, [customText]); // Removed editingText from dependencies to prevent infinite loop
-
-  // Format the text for preview/saving to include both parts
-  const formatFullText = (text: string): string => {
-    const systemMessage = "You're outside your focus zone. {app} is not in your whitelist.";
-    
-    if (text.includes(systemMessage)) {
-      return text;
-    }
-    
-    return `${systemMessage} ${text}`;
-  };
   
   const handleAddToWhitelist = () => {
     if (newApp.trim()) {
@@ -68,47 +42,6 @@ export function FocusModeSettings() {
     if (currentActiveApp) {
       addToWhitelist(currentActiveApp);
       toast.success(`Added ${currentActiveApp} to whitelist`);
-    }
-  };
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file (PNG, JPG, WebP)');
-        return;
-      }
-      
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image is too large (max 5MB)');
-        return;
-      }
-      
-      const imageUrl = URL.createObjectURL(file);
-      updateCustomImage(imageUrl);
-      
-      setShowImageDialog(false);
-      toast.success('Image updated successfully');
-    }
-  };
-  
-  const triggerFileInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-  
-  const clearCustomImage = () => {
-    updateCustomImage(null);
-    toast.info('Image removed');
-  };
-  
-  const handleUpdateCustomText = () => {
-    if (editingText) {
-      const fullText = formatFullText(editingText);
-      updateCustomText(fullText);
-      toast.success('Message updated');
     }
   };
   
@@ -136,87 +69,6 @@ export function FocusModeSettings() {
               checked={isFocusMode} 
               onCheckedChange={toggleFocusMode}
             />
-          </div>
-        </div>
-        
-        <Separator />
-        
-        {/* Custom Focus Mode Alert Settings */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Focus Mode Alert</h3>
-          <p className="text-sm text-muted-foreground">
-            Customize the popup that appears when you use non-whitelisted apps
-          </p>
-          
-          {/* Custom notification image */}
-          <div className="space-y-2">
-            <Label>Custom Image</Label>
-            
-            <div className="flex flex-col space-y-3">
-              {customImage ? (
-                <div className="relative border rounded-lg overflow-hidden">
-                  <img 
-                    src={customImage} 
-                    alt="Custom focus mode image" 
-                    className="w-full h-40 object-contain bg-black/5"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-7 w-7 rounded-full"
-                    onClick={clearCustomImage}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div 
-                  className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 flex flex-col items-center justify-center space-y-2 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => setShowImageDialog(true)}
-                >
-                  <Image className="h-10 w-10 text-muted-foreground/60" />
-                  <p className="text-sm text-center text-muted-foreground">
-                    No image selected<br />
-                    Click to upload an image
-                  </p>
-                </div>
-              )}
-              
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={() => setShowImageDialog(true)}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {customImage ? 'Change Image' : 'Upload Image'}
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Custom notification text */}
-          <div className="space-y-2">
-            <Label htmlFor="custom-text">Motivational Message (Optional)</Label>
-            <Textarea
-              id="custom-text"
-              placeholder="Stay focused! You can do this."
-              value={editingText.replace("You're outside your focus zone. {app} is not in your whitelist.", "").trim()}
-              onChange={(e) => setEditingText(e.target.value)}
-              rows={3}
-              className="resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              This message will appear below the standard alert text
-            </p>
-            <Button 
-              onClick={handleUpdateCustomText} 
-              variant="secondary" 
-              size="sm"
-            >
-              Save Message
-            </Button>
           </div>
         </div>
         
@@ -333,44 +185,8 @@ export function FocusModeSettings() {
             )}
           </div>
         </div>
-        
-        {/* Hidden file input for image upload */}
-        <input 
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-        
-        <AlertDialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Upload Custom Image</AlertDialogTitle>
-              <AlertDialogDescription>
-                Choose an image to show on focus mode notifications.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            
-            <div className="flex items-center justify-center p-6 border-2 border-dashed border-muted-foreground/20 rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
-                 onClick={triggerFileInput}>
-              <div className="text-center space-y-2">
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Click to select an image, or drag and drop
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  JPG, PNG, WebP up to 5MB
-                </p>
-              </div>
-            </div>
-            
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </CardContent>
     </Card>
   );
 }
+
