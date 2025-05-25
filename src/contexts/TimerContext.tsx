@@ -1,7 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { toast as sonnerToast } from "sonner";
 
 interface TimerSettings {
   pomodoroDuration: number;
@@ -48,7 +47,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   
   // Track if this is the initial load to prevent showing success toast
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isUserTriggeredUpdate, setIsUserTriggeredUpdate] = useState(false);
   
   // Pomodoro Timer state
   const [pomodoroMinutes, setPomodoroMinutes] = useState(() => {
@@ -142,11 +140,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("eyeCareRestDuration", eyeCareRestDuration.toString());
   }, [eyeCareTimeElapsed, isEyeCareActive, isEyeCareResting, eyeCareRestProgress, eyeCareWorkDuration, eyeCareRestDuration]);
 
-  // Function to update timer settings - properly sync with active timers
+  // Function to update timer settings - removed the unwanted toast notification
   const updateTimerSettings = (settings: TimerSettings) => {
-    // Mark this as a user-triggered update
-    setIsUserTriggeredUpdate(true);
-    
     // Update Pomodoro settings
     setPomodoroDuration(settings.pomodoroDuration);
     setPomodoroBreakDuration(settings.pomodoroBreakDuration);
@@ -174,11 +169,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       setEyeCareRestProgress(0);
     }
 
-    // Only show success toast if this is a user-initiated update AND the component is initialized
-    if (isInitialized && isUserTriggeredUpdate) {
-      sonnerToast.success("Timer settings updated successfully!");
-      setIsUserTriggeredUpdate(false); // Reset the flag
-    }
+    // Completely removed the unwanted toast notification
   };
 
   // Pomodoro Timer Logic

@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -44,6 +43,11 @@ export function FocusModeSettings() {
       toast.success(`Added ${currentActiveApp} to whitelist`);
     }
   };
+
+  const handleToggleFocusMode = () => {
+    console.log("Toggle focus mode called, current state:", isFocusMode);
+    toggleFocusMode();
+  };
   
   return (
     <Card>
@@ -67,7 +71,7 @@ export function FocusModeSettings() {
             <Switch 
               id="focus-mode" 
               checked={isFocusMode} 
-              onCheckedChange={toggleFocusMode}
+              onCheckedChange={handleToggleFocusMode}
             />
           </div>
         </div>
@@ -189,4 +193,3 @@ export function FocusModeSettings() {
     </Card>
   );
 }
-

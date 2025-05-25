@@ -21,23 +21,34 @@ const Index = () => {
   const [screenTime, setScreenTime] = useState<string | null>(null);
   const [distractionCount, setDistractionCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
-  // Subscribe to real-time data updates
+  // Subscribe to real-time data updates with proper user isolation
   useEffect(() => {
     const systemTray = SystemTrayService.getInstance();
     const userId = user?.id || 'guest';
     
+    // Clear previous user's data when user changes
+    if (currentUserId !== userId) {
+      console.log(`User changed from ${currentUserId} to ${userId}, clearing data`);
+      setScreenTime(null);
+      setDistractionCount(0);
+      setIsLoading(true);
+      setCurrentUserId(userId);
+    }
+    
     // Set current user to ensure proper data isolation
     systemTray.setCurrentUser(userId);
     
-    // Get initial screen time
+    // Get initial screen time for this specific user
     const initialScreenTime = systemTray.getFormattedScreenTime();
     if (initialScreenTime !== "0h 0m") {
       setScreenTime(initialScreenTime);
     }
     
-    // Listen for screen time updates
+    // Listen for screen time updates for this specific user
     const handleScreenTimeUpdate = (screenTimeMs: number) => {
+      console.log(`Screen time update for user ${userId}:`, screenTimeMs);
       if (screenTimeMs > 0) {
         setScreenTime(systemTray.formatScreenTime(screenTimeMs));
       } else {
@@ -46,8 +57,9 @@ const Index = () => {
       setIsLoading(false);
     };
     
-    // Listen for focus score updates
+    // Listen for focus score updates for this specific user
     const handleFocusScoreUpdate = (score: number, distractions: number) => {
+      console.log(`Focus score update for user ${userId}:`, score, distractions);
       setDistractionCount(distractions);
       setIsLoading(false);
     };
@@ -71,7 +83,7 @@ const Index = () => {
       systemTray.removeFocusScoreListener(handleFocusScoreUpdate);
       clearTimeout(loadingTimeout);
     };
-  }, [user]);
+  }, [user, currentUserId]);
 
   return (
     <div className="min-h-screen bg-background">
