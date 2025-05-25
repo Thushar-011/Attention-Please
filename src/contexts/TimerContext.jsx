@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -38,6 +37,65 @@ export const TimerProvider = ({ children }) => {
     }, 1000);
 
     return () => clearTimeout(autoStart);
+  }, []);
+
+  // Initialize focus mode monitoring
+  useEffect(() => {
+    console.log("Setting up focus mode monitoring...");
+    
+    // Listen for app change events from electron
+    const handleAppChange = (event) => {
+      console.log("App change event received:", event.detail);
+      
+      // Trigger focus mode check when app changes
+      if (window.electron) {
+        window.electron.send('check-focus-mode', {
+          appName: event.detail.appName
+        });
+      }
+    };
+
+    // Listen for focus mode violations
+    const handleFocusViolation = (event) => {
+      console.log("Focus violation detected:", event.detail);
+      
+      // Import and use FocusModeAlert dynamically to avoid circular imports
+      import('@/components/focus/FocusModeAlert.jsx').then(({ FocusModeAlert }) => {
+        // Create a temporary container for the alert
+        const alertContainer = document.createElement('div');
+        document.body.appendChild(alertContainer);
+        
+        // Use React to render the alert
+        import('react-dom/client').then(({ createRoot }) => {
+          const root = createRoot(alertContainer);
+          root.render(React.createElement(FocusModeAlert, {
+            appName: event.detail.appName,
+            onDismiss: () => {
+              root.unmount();
+              document.body.removeChild(alertContainer);
+            }
+          }));
+        });
+      });
+    };
+
+    window.addEventListener('app-changed', handleAppChange);
+    window.addEventListener('focus-mode-violation', handleFocusViolation);
+    
+    // Start monitoring if electron is available
+    if (window.electron) {
+      console.log("Starting focus mode monitoring...");
+      window.electron.send('start-focus-monitoring');
+    }
+
+    return () => {
+      window.removeEventListener('app-changed', handleAppChange);
+      window.removeEventListener('focus-mode-violation', handleFocusViolation);
+      
+      if (window.electron) {
+        window.electron.send('stop-focus-monitoring');
+      }
+    };
   }, []);
 
   // Pomodoro Timer Effect
@@ -115,12 +173,10 @@ export const TimerProvider = ({ children }) => {
   // Pomodoro Timer Controls
   const startPomodoroTimer = useCallback(() => {
     setIsPomodoroActive(true);
-    // Removed toast notification
   }, []);
 
   const pausePomodoroTimer = useCallback(() => {
     setIsPomodoroActive(false);
-    // Removed toast notification
   }, []);
 
   const resetPomodoroTimer = useCallback(() => {
@@ -128,18 +184,15 @@ export const TimerProvider = ({ children }) => {
     setIsPomodoroResting(false);
     setPomodoroTimeElapsed(0);
     setPomodoroRestProgress(0);
-    // Removed toast notification
   }, []);
 
   // Eye Care Timer Controls
   const startEyeCareTimer = useCallback(() => {
     setIsEyeCareActive(true);
-    // Removed toast notification
   }, []);
 
   const pauseEyeCareTimer = useCallback(() => {
     setIsEyeCareActive(false);
-    // Removed toast notification
   }, []);
 
   const resetEyeCareTimer = useCallback(() => {
@@ -147,7 +200,6 @@ export const TimerProvider = ({ children }) => {
     setIsEyeCareResting(false);
     setEyeCareTimeElapsed(0);
     setEyeCareRestProgress(0);
-    // Removed toast notification
   }, []);
 
   const contextValue = {

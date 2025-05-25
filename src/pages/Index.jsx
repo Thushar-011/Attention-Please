@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import SystemTrayService from "@/services/SystemTrayService";
 import { RichMediaPopup } from "@/components/customRules/RichMediaPopup.jsx";
+import { FocusModeMonitor } from "@/components/focus/FocusModeMonitor.jsx";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -131,6 +132,7 @@ const Index = () => {
       </div>
       
       <RichMediaPopup />
+      <FocusModeMonitor />
     </div>
   );
 };
