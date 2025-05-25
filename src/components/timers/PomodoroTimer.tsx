@@ -44,16 +44,21 @@ export function PomodoroTimer() {
   };
 
   const handleSaveSettings = () => {
+    // Update timer settings in context
     updateTimerSettings({
       pomodoroDuration: tempSettings.workTime / 60,
       pomodoroBreakDuration: tempSettings.shortBreakTime / 60,
       eyeCareWorkDuration: 20 * 60,
       eyeCareRestDuration: 20,
     });
+    
+    // Reset the timer to apply new settings immediately
+    resetPomodoroTimer(isPomodoroBreak);
+    
     setSettingsOpen(false);
   };
 
-  // Update temp settings when actual settings change
+  // Update temp settings when actual settings change from the main timer settings
   useEffect(() => {
     setTempSettings({
       workTime: pomodoroDuration * 60,
@@ -62,6 +67,13 @@ export function PomodoroTimer() {
       sessionsUntilLongBreak: 4
     });
   }, [pomodoroDuration, pomodoroBreakDuration]);
+
+  // Reset timer when settings change from outside this component
+  useEffect(() => {
+    if (!isPomodoroActive) {
+      resetPomodoroTimer(isPomodoroBreak);
+    }
+  }, [pomodoroDuration, pomodoroBreakDuration, isPomodoroActive, isPomodoroBreak, resetPomodoroTimer]);
 
   return (
     <Card className="w-full max-w-md mx-auto">

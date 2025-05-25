@@ -444,16 +444,24 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return true;
     }
     
+    console.log(`Checking app: "${normalizedAppName}" against whitelist:`, whitelist);
+    
     return whitelist.some(whitelistedApp => {
       // Normalize whitelist entry
       const normalizedWhitelistedApp = whitelistedApp.toLowerCase().replace(/[^\w\s.-]/g, '');
       
-      // Direct match
-      if (normalizedAppName === normalizedWhitelistedApp) return true;
+      console.log(`  Comparing "${normalizedAppName}" with "${normalizedWhitelistedApp}"`);
       
-      // Partial matches in either direction
+      // Direct match
+      if (normalizedAppName === normalizedWhitelistedApp) {
+        console.log(`  ✓ Direct match`);
+        return true;
+      }
+      
+      // Partial matches in either direction - more lenient matching
       if (normalizedAppName.includes(normalizedWhitelistedApp) || 
           normalizedWhitelistedApp.includes(normalizedAppName)) {
+        console.log(`  ✓ Partial match`);
         return true;
       }
       
@@ -461,6 +469,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (processName && (
           normalizedWhitelistedApp.includes(processName) || 
           processName.includes(normalizedWhitelistedApp))) {
+        console.log(`  ✓ Process name match`);
         return true;
       }
       
@@ -473,9 +482,14 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const bundleParts = bundleId.split('.');
         
         // Check all parts of the bundle ID (e.g., "microsoft", "vscode")
-        return bundleParts.some(part => 
+        const bundleMatch = bundleParts.some(part => 
           part.includes(normalizedWhitelistedApp) || 
           normalizedWhitelistedApp.includes(part));
+          
+        if (bundleMatch) {
+          console.log(`  ✓ Bundle ID match`);
+          return true;
+        }
       }
       
       // Match executable name parts
@@ -486,6 +500,7 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (exeName && (
             exeName.includes(normalizedWhitelistedApp) || 
             normalizedWhitelistedApp.includes(exeName))) {
+          console.log(`  ✓ Executable name match`);
           return true;
         }
         
@@ -494,16 +509,49 @@ export const FocusModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (exeNameNoExt && (
             exeNameNoExt.includes(normalizedWhitelistedApp) || 
             normalizedWhitelistedApp.includes(exeNameNoExt))) {
+          console.log(`  ✓ Executable name (no ext) match`);
           return true;
         }
       }
       
-      // Match window title components (split by spaces, dashes, etc)
-      const titleParts = normalizedAppName.split(/[\s-_\.]+/);
-      return titleParts.some(part => 
-        part.includes(normalizedWhitelistedApp) || 
-        normalizedWhitelistedApp.includes(part)
+      // Match window title components (split by spaces, dashes, etc) - more flexible
+      const titleParts = normalizedAppName.split(/[\s-_\.]+/).filter(part => part.length > 2); // Filter out very short parts
+      const whitelistParts = normalizedWhitelistedApp.split(/[\s-_\.]+/).filter(part => part.length > 2);
+      
+      // Check if any significant part of the whitelist app name appears in the title
+      const titlePartsMatch = whitelistParts.some(whitelistPart => 
+        titleParts.some(titlePart => 
+          titlePart.includes(whitelistPart) || 
+          whitelistPart.includes(titlePart)
+        )
       );
+      
+      if (titlePartsMatch) {
+        console.log(`  ✓ Title parts match`);
+        return true;
+      }
+      
+      // Special handling for common browser names
+      const browserNames = ['chrome', 'firefox', 'safari', 'edge', 'opera', 'brave'];
+      const isBrowser = browserNames.some(browser => 
+        normalizedAppName.includes(browser) || normalizedWhitelistedApp.includes(browser));
+      
+      if (isBrowser) {
+        // For browsers, be more lenient with matching
+        const browserMatch = browserNames.some(browser => 
+          (normalizedAppName.includes(browser) && normalizedWhitelistedApp.includes(browser)) ||
+          (normalizedAppName.includes('microsoft') && normalizedWhitelistedApp.includes('edge')) ||
+          (normalizedAppName.includes('edge') && normalizedWhitelistedApp.includes('microsoft'))
+        );
+        
+        if (browserMatch) {
+          console.log(`  ✓ Browser match`);
+          return true;
+        }
+      }
+      
+      console.log(`  ✗ No match`);
+      return false;
     });
   };
   
