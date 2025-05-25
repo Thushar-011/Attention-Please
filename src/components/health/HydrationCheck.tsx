@@ -1,14 +1,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Droplets, Clock } from "lucide-react";
+import { Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 export function HydrationCheck({ className }: { className?: string }) {
-  // Use localStorage to persist state across tab changes
   const [isEnabled, setIsEnabled] = useState(() => {
     const saved = localStorage.getItem("hydrationEnabled");
     return saved ? JSON.parse(saved) : false;
@@ -18,24 +16,9 @@ export function HydrationCheck({ className }: { className?: string }) {
     const saved = localStorage.getItem("hydrationTimeLeft");
     return saved ? parseInt(saved) : 30 * 60;
   });
-  
-  const [lastUpdateTime, setLastUpdateTime] = useState(() => {
-    const saved = localStorage.getItem("hydrationLastUpdate");
-    return saved ? parseInt(saved) : Date.now();
-  });
 
-  // Calculate actual time left based on elapsed time since last update
-  useEffect(() => {
-    if (isEnabled) {
-      const now = Date.now();
-      const elapsed = Math.floor((now - lastUpdateTime) / 1000);
-      const actualTimeLeft = Math.max(0, timeLeft - elapsed);
-      
-      if (actualTimeLeft !== timeLeft) {
-        setTimeLeft(actualTimeLeft);
-      }
-    }
-  }, [isEnabled, timeLeft, lastUpdateTime]);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTickRef = useRef<number>(Date.now());
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -46,19 +29,17 @@ export function HydrationCheck({ className }: { className?: string }) {
     localStorage.setItem("hydrationTimeLeft", timeLeft.toString());
   }, [timeLeft]);
 
+  // Main timer logic
   useEffect(() => {
-    localStorage.setItem("hydrationLastUpdate", Date.now().toString());
-  }, [timeLeft]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
     if (isEnabled && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          const newTime = Math.max(0, prev - 1);
-          if (newTime <= 0) {
-            // Time's up - show notification
+      lastTickRef.current = Date.now();
+      
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          const newTime = Math.max(0, prevTime - 1);
+          
+          if (newTime === 0) {
+            // Timer completed - show notification
             toast({
               title: "💧 Hydration Reminder",
               description: "Time to drink some water! Stay hydrated for better focus.",
@@ -73,26 +54,37 @@ export function HydrationCheck({ className }: { className?: string }) {
               });
             }
             
-            // Reset timer
-            return 30 * 60; // Reset to 30 minutes
+            // Reset timer to 30 minutes
+            return 30 * 60;
           }
+          
           return newTime;
         });
-        setLastUpdateTime(Date.now());
       }, 1000);
+    } else {
+      // Clear interval when disabled or time is 0
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
 
+    // Cleanup function
     return () => {
-      if (interval) clearInterval(interval);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-  }, [isEnabled, timeLeft]);
+  }, [isEnabled, toast]);
 
   const toggleEnabled = () => {
     const newEnabled = !isEnabled;
     setIsEnabled(newEnabled);
+    
     if (newEnabled) {
+      // Reset timer when enabling
       setTimeLeft(30 * 60);
-      setLastUpdateTime(Date.now());
     }
   };
 
