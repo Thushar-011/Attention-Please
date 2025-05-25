@@ -1,7 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import SystemTrayService from '@/services/SystemTrayService';
 import { toast } from "sonner";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 
 const FocusModeContext = createContext(undefined);
@@ -539,7 +540,10 @@ export const FocusModeProvider = ({ children }) => {
             });
           }
           
-          centerToast.success("Focus Mode activated - You'll be notified when using non-whitelisted apps");
+          centerToast({
+            title: "Focus Mode activated",
+            description: "You'll be notified when using non-whitelisted apps",
+          });
           
           // Immediately check current window against whitelist
           if (lastActiveWindow) {
@@ -573,12 +577,15 @@ export const FocusModeProvider = ({ children }) => {
           setShowingAlert(false);
           setCurrentAlertApp(null);
           
-          centerToast.info("Focus Mode deactivated");
+          centerToast({
+            title: "Focus Mode deactivated",
+            description: "You can now use all applications freely",
+          });
         }
       }
     }, 50);
     
-  }, [isFocusMode, lastActiveWindow, whitelist]);
+  }, [isFocusMode, lastActiveWindow, whitelist, centerToast]);
   
   const addToWhitelist = useCallback((app) => {
     if (!whitelist.includes(app) && app.trim() !== '') {

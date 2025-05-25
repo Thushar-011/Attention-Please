@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TimerSettings {
   pomodoroDuration: number;
@@ -44,101 +45,115 @@ const TimerContext = createContext<TimerContextState | undefined>(undefined);
 
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const userId = user?.id || 'guest';
   
   // Track if this is the initial load to prevent showing success toast
   const [isInitialized, setIsInitialized] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
-  // Pomodoro Timer state
+  // Pomodoro Timer state with user-specific keys
   const [pomodoroMinutes, setPomodoroMinutes] = useState(() => {
-    const saved = localStorage.getItem("pomodoroMinutes");
+    const saved = localStorage.getItem(`pomodoroMinutes-${userId}`);
     return saved ? parseInt(saved) : 25;
   });
   const [pomodoroSeconds, setPomodoroSeconds] = useState(() => {
-    const saved = localStorage.getItem("pomodoroSeconds");
+    const saved = localStorage.getItem(`pomodoroSeconds-${userId}`);
     return saved ? parseInt(saved) : 0;
   });
   const [isPomodoroActive, setIsPomodoroActive] = useState(() => {
-    const saved = localStorage.getItem("isPomodoroActive");
+    const saved = localStorage.getItem(`isPomodoroActive-${userId}`);
     return saved ? saved === "true" : false;
   });
   const [isPomodoroBreak, setIsPomodoroBreak] = useState(() => {
-    const saved = localStorage.getItem("isPomodoroBreak");
+    const saved = localStorage.getItem(`isPomodoroBreak-${userId}`);
     return saved ? saved === "true" : false;
   });
   const [pomodoroProgress, setPomodoroProgress] = useState(() => {
-    const saved = localStorage.getItem("pomodoroProgress");
+    const saved = localStorage.getItem(`pomodoroProgress-${userId}`);
     return saved ? parseFloat(saved) : 100;
   });
   const [pomodoroDuration, setPomodoroDuration] = useState(() => {
-    const saved = localStorage.getItem("pomodoroDuration");
+    const saved = localStorage.getItem(`pomodoroDuration-${userId}`);
     return saved ? parseInt(saved) : 25;
   });
   const [pomodoroBreakDuration, setPomodoroBreakDuration] = useState(() => {
-    const saved = localStorage.getItem("pomodoroBreakDuration");
+    const saved = localStorage.getItem(`pomodoroBreakDuration-${userId}`);
     return saved ? parseInt(saved) : 5;
   });
   
-  // Eye Care Timer state
+  // Eye Care Timer state with user-specific keys
   const [eyeCareTimeElapsed, setEyeCareTimeElapsed] = useState(() => {
-    const saved = localStorage.getItem("eyeCareTimeElapsed");
+    const saved = localStorage.getItem(`eyeCareTimeElapsed-${userId}`);
     return saved ? parseInt(saved) : 0;
   });
   const [isEyeCareActive, setIsEyeCareActive] = useState(() => {
-    const saved = localStorage.getItem("isEyeCareActive");
+    const saved = localStorage.getItem(`isEyeCareActive-${userId}`);
     return saved ? saved === "true" : false;
   });
   const [isEyeCareResting, setIsEyeCareResting] = useState(() => {
-    const saved = localStorage.getItem("isEyeCareResting");
+    const saved = localStorage.getItem(`isEyeCareResting-${userId}`);
     return saved ? saved === "true" : false;
   });
   const [eyeCareRestProgress, setEyeCareRestProgress] = useState(() => {
-    const saved = localStorage.getItem("eyeCareRestProgress");
+    const saved = localStorage.getItem(`eyeCareRestProgress-${userId}`);
     return saved ? parseFloat(saved) : 0;
   });
   const [eyeCareWorkDuration, setEyeCareWorkDuration] = useState(() => {
-    const saved = localStorage.getItem("eyeCareWorkDuration");
+    const saved = localStorage.getItem(`eyeCareWorkDuration-${userId}`);
     return saved ? parseInt(saved) : 20 * 60; // Default: 20 minutes
   });
   const [eyeCareRestDuration, setEyeCareRestDuration] = useState(() => {
-    const saved = localStorage.getItem("eyeCareRestDuration");
+    const saved = localStorage.getItem(`eyeCareRestDuration-${userId}`);
     return saved ? parseInt(saved) : 20; // Default: 20 seconds
   });
 
-  // Auto-start timers when app loads
+  // Reset timers when user changes
   useEffect(() => {
-    // Auto-start both timers after a short delay
-    const startTimersTimeout = setTimeout(() => {
-      setIsPomodoroActive(true);
-      setIsEyeCareActive(true);
-      setIsInitialized(true); // Mark as initialized after auto-start
-      console.log("Auto-started Pomodoro and Eye Care timers");
-    }, 1500); // Short delay to ensure everything is loaded
+    if (currentUserId !== userId) {
+      console.log(`User changed from ${currentUserId} to ${userId}, resetting timers`);
+      
+      // Reset all timer states to defaults for new user
+      setPomodoroMinutes(25);
+      setPomodoroSeconds(0);
+      setIsPomodoroActive(false);
+      setIsPomodoroBreak(false);
+      setPomodoroProgress(100);
+      setPomodoroDuration(25);
+      setPomodoroBreakDuration(5);
+      
+      setEyeCareTimeElapsed(0);
+      setIsEyeCareActive(false);
+      setIsEyeCareResting(false);
+      setEyeCareRestProgress(0);
+      setEyeCareWorkDuration(20 * 60);
+      setEyeCareRestDuration(20);
+      
+      setCurrentUserId(userId);
+      setIsInitialized(true);
+    }
+  }, [userId, currentUserId]);
 
-    return () => {
-      clearTimeout(startTimersTimeout);
-    };
-  }, []);
-
-  // Save Pomodoro state to localStorage
+  // Save Pomodoro state to localStorage with user-specific keys
   useEffect(() => {
-    localStorage.setItem("pomodoroMinutes", pomodoroMinutes.toString());
-    localStorage.setItem("pomodoroSeconds", pomodoroSeconds.toString());
-    localStorage.setItem("isPomodoroActive", isPomodoroActive.toString());
-    localStorage.setItem("isPomodoroBreak", isPomodoroBreak.toString());
-    localStorage.setItem("pomodoroProgress", pomodoroProgress.toString());
-    localStorage.setItem("pomodoroDuration", pomodoroDuration.toString());
-    localStorage.setItem("pomodoroBreakDuration", pomodoroBreakDuration.toString());
-  }, [pomodoroMinutes, pomodoroSeconds, isPomodoroActive, isPomodoroBreak, pomodoroProgress, pomodoroDuration, pomodoroBreakDuration]);
+    localStorage.setItem(`pomodoroMinutes-${userId}`, pomodoroMinutes.toString());
+    localStorage.setItem(`pomodoroSeconds-${userId}`, pomodoroSeconds.toString());
+    localStorage.setItem(`isPomodoroActive-${userId}`, isPomodoroActive.toString());
+    localStorage.setItem(`isPomodoroBreak-${userId}`, isPomodoroBreak.toString());
+    localStorage.setItem(`pomodoroProgress-${userId}`, pomodoroProgress.toString());
+    localStorage.setItem(`pomodoroDuration-${userId}`, pomodoroDuration.toString());
+    localStorage.setItem(`pomodoroBreakDuration-${userId}`, pomodoroBreakDuration.toString());
+  }, [pomodoroMinutes, pomodoroSeconds, isPomodoroActive, isPomodoroBreak, pomodoroProgress, pomodoroDuration, pomodoroBreakDuration, userId]);
 
-  // Save Eye Care state to localStorage
+  // Save Eye Care state to localStorage with user-specific keys
   useEffect(() => {
-    localStorage.setItem("eyeCareTimeElapsed", eyeCareTimeElapsed.toString());
-    localStorage.setItem("isEyeCareActive", isEyeCareActive.toString());
-    localStorage.setItem("isEyeCareResting", isEyeCareResting.toString());
-    localStorage.setItem("eyeCareRestProgress", eyeCareRestProgress.toString());
-    localStorage.setItem("eyeCareWorkDuration", eyeCareWorkDuration.toString());
-    localStorage.setItem("eyeCareRestDuration", eyeCareRestDuration.toString());
-  }, [eyeCareTimeElapsed, isEyeCareActive, isEyeCareResting, eyeCareRestProgress, eyeCareWorkDuration, eyeCareRestDuration]);
+    localStorage.setItem(`eyeCareTimeElapsed-${userId}`, eyeCareTimeElapsed.toString());
+    localStorage.setItem(`isEyeCareActive-${userId}`, isEyeCareActive.toString());
+    localStorage.setItem(`isEyeCareResting-${userId}`, isEyeCareResting.toString());
+    localStorage.setItem(`eyeCareRestProgress-${userId}`, eyeCareRestProgress.toString());
+    localStorage.setItem(`eyeCareWorkDuration-${userId}`, eyeCareWorkDuration.toString());
+    localStorage.setItem(`eyeCareRestDuration-${userId}`, eyeCareRestDuration.toString());
+  }, [eyeCareTimeElapsed, isEyeCareActive, isEyeCareResting, eyeCareRestProgress, eyeCareWorkDuration, eyeCareRestDuration, userId]);
 
   // Function to update timer settings - removed the unwanted toast notification
   const updateTimerSettings = (settings: TimerSettings) => {
@@ -150,11 +165,11 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     setEyeCareWorkDuration(settings.eyeCareWorkDuration);
     setEyeCareRestDuration(settings.eyeCareRestDuration);
     
-    // Save settings to localStorage for persistence
-    localStorage.setItem("pomodoroDuration", settings.pomodoroDuration.toString());
-    localStorage.setItem("pomodoroBreakDuration", settings.pomodoroBreakDuration.toString());
-    localStorage.setItem("eyeCareWorkDuration", settings.eyeCareWorkDuration.toString());
-    localStorage.setItem("eyeCareRestDuration", settings.eyeCareRestDuration.toString());
+    // Save settings to localStorage for persistence with user-specific keys
+    localStorage.setItem(`pomodoroDuration-${userId}`, settings.pomodoroDuration.toString());
+    localStorage.setItem(`pomodoroBreakDuration-${userId}`, settings.pomodoroBreakDuration.toString());
+    localStorage.setItem(`eyeCareWorkDuration-${userId}`, settings.eyeCareWorkDuration.toString());
+    localStorage.setItem(`eyeCareRestDuration-${userId}`, settings.eyeCareRestDuration.toString());
     
     // If timers are currently inactive, reset them with new durations
     if (!isPomodoroActive) {
