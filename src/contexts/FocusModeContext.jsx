@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import SystemTrayService from '@/services/SystemTrayService';
 import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 
 const FocusModeContext = createContext(undefined);
@@ -222,7 +223,7 @@ export const FocusModeProvider = ({ children }) => {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [lastActiveWindow, currentAlertApp, checkInterval, userId]);
+  }, [lastActiveWindow, currentAlertApp, checkInterval, userId, whitelist]);
   
   // Save whitelist whenever it changes
   useEffect(() => {
@@ -317,7 +318,7 @@ export const FocusModeProvider = ({ children }) => {
         clearInterval(checkInterval);
       }
     };
-  }, [isFocusMode]);
+  }, [isFocusMode, lastActiveWindow, whitelist]);
   
   // Simplified effect to handle app switches - trigger on every switch from whitelisted to non-whitelisted
   useEffect(() => {
@@ -538,7 +539,7 @@ export const FocusModeProvider = ({ children }) => {
             });
           }
           
-          toast.success("Focus Mode activated - You'll be notified when using non-whitelisted apps");
+          centerToast.success("Focus Mode activated - You'll be notified when using non-whitelisted apps");
           
           // Immediately check current window against whitelist
           if (lastActiveWindow) {
@@ -572,7 +573,7 @@ export const FocusModeProvider = ({ children }) => {
           setShowingAlert(false);
           setCurrentAlertApp(null);
           
-          toast.info("Focus Mode deactivated");
+          centerToast.info("Focus Mode deactivated");
         }
       }
     }, 50);
