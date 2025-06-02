@@ -86,13 +86,7 @@ npm run electron
 * 🔔 **System-level integration** with background services
 * ✨ **Elegant UI** that delivers meaningful utility
 * 🧠 **Built with purpose** — something recruiters and users value
-
----
-
-## 📂 Repository
-
-**GitHub Repo:** [Attention Please](https://github.com/Thushar-011/Attention-Please.git)
-
+* 
 ---
 
 ## 👥 Contributors
@@ -108,9 +102,6 @@ npm run electron
 
 This project is licensed under the **MIT License** – see the [LICENSE](./LICENSE) file for details.
 
----
 
-> “Take care of your mind, and your productivity will follow.”
 
-```
 
