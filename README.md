@@ -75,13 +75,42 @@ npm run dev
 
 # 5. Launch the Electron desktop app
 npm run electron
+````
 
-👥 Contributors
-Spoorti Govind Nayak – 1AY22IS109
+---
 
-Thushar Raj S G – 1AY22IS117
+## 🌟 Why It Stands Out
 
-Under the guidance of Dr. Pankaj Kumar, Acharya Institute of Technology
+* 💻 **Full-stack desktop application**
+* ✅ **Solves a real use-case**: improving wellness and productivity
+* 🔔 **System-level integration** with background services
+* ✨ **Elegant UI** that delivers meaningful utility
+* 🧠 **Built with purpose** — something recruiters and users value
 
-📃 License
-This project is licensed under the MIT License – see the LICENSE file for details.
+---
+
+## 📂 Repository
+
+**GitHub Repo:** [Attention Please](https://github.com/Thushar-011/Attention-Please.git)
+
+---
+
+## 👥 Contributors
+
+* **Spoorti Govind Nayak** – 1AY22IS109
+* **Thushar Raj S G** – 1AY22IS117
+
+> **Under the guidance of Dr. Pankaj Kumar, Acharya Institute of Technology**
+
+---
+
+## 📃 License
+
+This project is licensed under the **MIT License** – see the [LICENSE](./LICENSE) file for details.
+
+---
+
+> “Take care of your mind, and your productivity will follow.”
+
+```
+
