@@ -75,3 +75,13 @@ npm run dev
 
 # 5. Launch the Electron desktop app
 npm run electron
+
+👥 Contributors
+Spoorti Govind Nayak – 1AY22IS109
+
+Thushar Raj S G – 1AY22IS117
+
+Under the guidance of Dr. Pankaj Kumar, Acharya Institute of Technology
+
+📃 License
+This project is licensed under the MIT License – see the LICENSE file for details.
